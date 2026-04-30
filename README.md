@@ -1,12 +1,12 @@
 ---
-title: "StarterApp readme"
-parent: StarterApp
+title: "RentalApp readme"
+parent: RentalApp
 grand_parent: C# practice
 nav_order: 5
 mermaid: true
 ---
 
-# StarterApp
+# RentalApp
 
 The purpose of this app is to act as a starting point for further development. It provides some
 basic features including:
@@ -55,7 +55,7 @@ Before using this app, ensure you have:
 
 ### Configuration
 
-1. Copy `StarterApp.Database/appsettings.json.template` to `StarterApp.Database/appsettings.json`
+1. Copy `RentalApp.Database/appsettings.json.template` to `RentalApp.Database/appsettings.json`
 2. Update the connection string with your PostgreSQL credentials:
    ```json
    {
@@ -69,7 +69,7 @@ Before using this app, ensure you have:
 
 1. Navigate to the Migrations project and create the initial migration:
    ```bash
-   cd StarterApp.Migrations
+   cd RentalApp.Migrations
    dotnet ef migrations add InitialCreate
    ```
 
@@ -80,7 +80,7 @@ Before using this app, ensure you have:
 
 3. Build and run the application:
    ```bash
-   cd ../StarterApp
+   cd ../RentalApp
    dotnet build
    dotnet run
    ```

@@ -35,21 +35,21 @@ jobs:
           dotnet-version: 9.0
 
       - name: Restore dependencies
-        run: dotnet restore StarterApp.Tests/StarterApp.Tests.csproj
+        run: dotnet restore RentalApp.Tests/RentalApp.Tests.csproj
 
       - name: Build test project
-        run: dotnet build StarterApp.Tests/StarterApp.Tests.csproj --configuration Debug --no-restore
+        run: dotnet build RentalApp.Tests/RentalApp.Tests.csproj --configuration Debug --no-restore
 
       - name: Run tests with coverage
         env:
           CONNECTION_STRING: Host=localhost;Port=5432;Username=app_user;Password=app_password;Database=appdb
-        run: dotnet test StarterApp.Tests/StarterApp.Tests.csproj --configuration Debug --no-build --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test RentalApp.Tests/RentalApp.Tests.csproj --configuration Debug --no-build --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx"
         
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: StarterApp.Tests/TestResults/**/coverage.cobertura.xml
+          files: RentalApp.Tests/TestResults/**/coverage.cobertura.xml
           fail_ci_if_error: false
 
       - name: Upload test results
@@ -57,4 +57,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: StarterApp.Tests/TestResults/
+          path: RentalApp.Tests/TestResults/
