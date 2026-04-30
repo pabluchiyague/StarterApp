@@ -24,7 +24,10 @@ public static class MauiProgram
         // Database
         builder.Services.AddDbContext<AppDbContext>();
         
-        // Repository 
+        //Authentication
+        builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+        
+        // Repository         
         builder.Services.AddScoped<INoteRepository, NoteRepository>();
 
         // Services
