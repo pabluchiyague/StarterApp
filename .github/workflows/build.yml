@@ -44,6 +44,13 @@ jobs:
         env:
           CONNECTION_STRING: Host=localhost;Port=5432;Username=app_user;Password=app_password;Database=appdb
         run: dotnet test StarterApp.Tests/StarterApp.Tests.csproj --configuration Debug --no-build --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx"
+        
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: StarterApp.Tests/TestResults/**/coverage.cobertura.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
       - name: Upload test results
         if: always()
