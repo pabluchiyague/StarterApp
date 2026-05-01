@@ -43,7 +43,14 @@ public static class MauiProgram
         builder.Services.AddTransient<NoteViewModel>();
         builder.Services.AddTransient<NotePage>();
 
+        // ViewModels and Views for Authentication
+        builder.Services.AddTransient<LoginViewModel>();
+        builder.Services.AddTransient<LoginPage>();
+        builder.Services.AddTransient<RegisterViewModel>();
+        builder.Services.AddTransient<RegisterPage>();
+
         // About page
+        builder.Services.AddTransient<AboutViewModel>();
         builder.Services.AddTransient<AboutPage>();
 
 #if DEBUG

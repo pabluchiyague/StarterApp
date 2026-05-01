@@ -24,9 +24,7 @@ public class NavigationService : INavigationService
 
     public async Task NavigateToRootAsync()
     {
-        // Root of the note-taking app is the Notes list page.
-        // (Was "//login" in the original auth-focused RentalApp.)
-        await Shell.Current.GoToAsync("//notes");
+        await Shell.Current.GoToAsync("//login");
     }
 
     public async Task PopToRootAsync()

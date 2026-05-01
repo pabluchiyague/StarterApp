@@ -8,7 +8,8 @@ namespace RentalApp.Tests;
 /// (Arrange / Act / Assert) and is named MethodName_Scenario_ExpectedBehaviour
 /// per the xUnit / .NET conventions covered in Tutorial 6.
 /// </summary>
-public class NoteRepositoryTests : IClassFixture<DatabaseFixture>
+[Collection("Database")]
+public class NoteRepositoryTests
 {
     private readonly DatabaseFixture _fixture;
     private readonly NoteRepository _repository;
