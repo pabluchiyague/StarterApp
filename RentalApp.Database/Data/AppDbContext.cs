@@ -15,14 +15,13 @@ public class AppDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        // If DbContextOptions were already supplied (DI / tests), respect them.
+        // Respect any options the DI container or test harness has supplied.
         if (optionsBuilder.IsConfigured) return;
 
-        // Prefer the CONNECTION_STRING env var when running inside the dev container
-        // (docker-compose sets it to point at the `db` service via the shared network
-        // namespace). Fall back to the embedded appsettings.json, which targets the
-        // Android emulator's 10.0.2.2 host loopback and is only valid when the MAUI
-        // app runs on-device.
+        // Prefer the CONNECTION_STRING env var (dev container, CI service
+        // container, or DatabaseFixture override). Fall back to the embedded
+        // appsettings.json which targets the Android emulator's 10.0.2.2
+        // host loopback for on-device runs.
         var envConn = Environment.GetEnvironmentVariable("CONNECTION_STRING");
         if (!string.IsNullOrEmpty(envConn))
         {
@@ -32,6 +31,10 @@ public class AppDbContext : DbContext
 
         var a = Assembly.GetExecutingAssembly();
         using var stream = a.GetManifestResourceStream("RentalApp.Database.appsettings.json");
+        if (stream == null)
+        {
+            throw new InvalidOperationException("Embedded database appsettings.json was not found.");
+        }
 
         var config = new ConfigurationBuilder()
             .AddJsonStream(stream)
@@ -42,20 +45,22 @@ public class AppDbContext : DbContext
         );
     }
 
-    // Auth tables
-    public DbSet<User> Users { get; set; }
-    public DbSet<Role> Roles { get; set; }
+    // ------------ Auth ------------
+    public DbSet<User>     Users     { get; set; }
+    public DbSet<Role>     Roles     { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
 
-    // Note-taking tables (will be replaced by rental tables in a later phase)
+    // ------------ Domain ----------
     public DbSet<Category> Categories { get; set; }
-    public DbSet<Note> Notes { get; set; }
+    public DbSet<Item>     Items      { get; set; }
+    public DbSet<Rental>   Rentals    { get; set; }
+    public DbSet<Review>   Reviews    { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // ---- Auth: User ----
+        // ---- User ----
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasIndex(e => e.Email).IsUnique();
@@ -66,7 +71,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.PasswordSalt).HasMaxLength(255);
         });
 
-        // ---- Auth: Role ----
+        // ---- Role ----
         modelBuilder.Entity<Role>(entity =>
         {
             entity.HasIndex(e => e.Name).IsUnique();
@@ -74,40 +79,82 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Description).HasMaxLength(500);
         });
 
-        // ---- Auth: UserRole junction ----
+        // ---- UserRole ----
         modelBuilder.Entity<UserRole>(entity =>
         {
             entity.HasIndex(e => new { e.UserId, e.RoleId }).IsUnique();
-
-            entity.HasOne(ur => ur.User)
-                  .WithMany(u => u.UserRoles)
-                  .HasForeignKey(ur => ur.UserId);
-
-            entity.HasOne(ur => ur.Role)
-                  .WithMany(r => r.UserRoles)
-                  .HasForeignKey(ur => ur.RoleId);
+            entity.HasOne(ur => ur.User).WithMany(u => u.UserRoles).HasForeignKey(ur => ur.UserId);
+            entity.HasOne(ur => ur.Role).WithMany(r => r.UserRoles).HasForeignKey(ur => ur.RoleId);
         });
 
-        // ---- Notes: Category ----
+        // ---- Category ----
         modelBuilder.Entity<Category>(entity =>
         {
             entity.HasIndex(e => e.Name).IsUnique();
+            entity.HasIndex(e => e.Slug).IsUnique();
             entity.Property(e => e.Name).HasMaxLength(50);
+            entity.Property(e => e.Slug).HasMaxLength(50);
             entity.Property(e => e.ColorHex).HasMaxLength(7);
             entity.Property(e => e.Description).HasMaxLength(200);
         });
 
-        // ---- Notes: Note ----
-        modelBuilder.Entity<Note>(entity =>
+        // ---- Item ----
+        modelBuilder.Entity<Item>(entity =>
         {
             entity.HasIndex(e => e.CategoryId);
+            entity.HasIndex(e => e.OwnerId);
             entity.HasIndex(e => e.CreatedAt);
             entity.Property(e => e.Title).HasMaxLength(100);
-            entity.Property(e => e.Content).HasColumnType("text");
-            entity.HasOne(n => n.Category)
-                  .WithMany(c => c.Notes)
-                  .HasForeignKey(n => n.CategoryId)
-                  .OnDelete(DeleteBehavior.SetNull);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.ImageUrl).HasMaxLength(500);
+
+            entity.HasOne(i => i.Category)
+                  .WithMany(c => c.Items)
+                  .HasForeignKey(i => i.CategoryId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(i => i.Owner)
+                  .WithMany()
+                  .HasForeignKey(i => i.OwnerId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ---- Rental ----
+        modelBuilder.Entity<Rental>(entity =>
+        {
+            entity.HasIndex(e => e.ItemId);
+            entity.HasIndex(e => e.BorrowerId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => new { e.ItemId, e.Status });
+
+            entity.HasOne(r => r.Item)
+                  .WithMany(i => i.Rentals)
+                  .HasForeignKey(r => r.ItemId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Borrower)
+                  .WithMany()
+                  .HasForeignKey(r => r.BorrowerId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ---- Review ----
+        modelBuilder.Entity<Review>(entity =>
+        {
+            // One review per rental — enforces the API's no-duplicate rule
+            entity.HasIndex(e => e.RentalId).IsUnique();
+            entity.HasIndex(e => e.ReviewerId);
+            entity.Property(e => e.Comment).HasMaxLength(500);
+
+            entity.HasOne(rv => rv.Rental)
+                  .WithOne(r => r.Review)
+                  .HasForeignKey<Review>(rv => rv.RentalId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(rv => rv.Reviewer)
+                  .WithMany()
+                  .HasForeignKey(rv => rv.ReviewerId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ---- Seeds ----
@@ -116,9 +163,8 @@ public class AppDbContext : DbContext
     }
 
     /// <summary>
-    /// Seeds the three default roles required by the auth services.
-    /// "OrdinaryUser" is flagged IsDefault so RegisterAsync auto-assigns it
-    /// to new accounts.
+    /// Seeds the three default roles. <c>OrdinaryUser</c> is flagged
+    /// IsDefault=true so RegisterAsync auto-assigns it to new accounts.
     /// </summary>
     private void SeedRoles(ModelBuilder modelBuilder)
     {
@@ -130,16 +176,17 @@ public class AppDbContext : DbContext
     }
 
     /// <summary>
-    /// Seeds default note categories. These will go away when the domain
-    /// is reset to rentals (Phase 2 of the coursework plan).
+    /// Seeds rental categories with their API-aligned slugs. Slugs match
+    /// the values the API accepts in <c>GET /items?category=tools</c>.
     /// </summary>
     private void SeedCategories(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Category>().HasData(
-            new Category { Id = 1, Name = "Personal", ColorHex = "#4CAF50", Description = "Personal notes and ideas" },
-            new Category { Id = 2, Name = "Work",     ColorHex = "#2196F3", Description = "Work-related tasks and notes" },
-            new Category { Id = 3, Name = "Study",    ColorHex = "#FF9800", Description = "Study materials and learning notes" },
-            new Category { Id = 4, Name = "Shopping", ColorHex = "#E91E63", Description = "Shopping lists and reminders" }
+            new Category { Id = 1, Name = "Tools",       Slug = "tools",       ColorHex = "#F44336", Description = "Power tools, hand tools" },
+            new Category { Id = 2, Name = "Camping",     Slug = "camping",     ColorHex = "#4CAF50", Description = "Tents, stoves, sleeping bags" },
+            new Category { Id = 3, Name = "Sports",      Slug = "sports",      ColorHex = "#2196F3", Description = "Bikes, skis, sports gear" },
+            new Category { Id = 4, Name = "Electronics", Slug = "electronics", ColorHex = "#9C27B0", Description = "Cameras, projectors, audio" },
+            new Category { Id = 5, Name = "Games",       Slug = "games",       ColorHex = "#FF9800", Description = "Board games, party games" }
         );
     }
 }

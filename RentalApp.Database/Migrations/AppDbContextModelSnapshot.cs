@@ -44,9 +44,17 @@ namespace RentalApp.Database.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("Slug")
                         .IsUnique();
 
                     b.ToTable("categories");
@@ -55,34 +63,46 @@ namespace RentalApp.Database.Migrations
                         new
                         {
                             Id = 1,
-                            ColorHex = "#4CAF50",
-                            Description = "Personal notes and ideas",
-                            Name = "Personal"
+                            ColorHex = "#F44336",
+                            Description = "Power tools, hand tools",
+                            Name = "Tools",
+                            Slug = "tools"
                         },
                         new
                         {
                             Id = 2,
-                            ColorHex = "#2196F3",
-                            Description = "Work-related tasks and notes",
-                            Name = "Work"
+                            ColorHex = "#4CAF50",
+                            Description = "Tents, stoves, sleeping bags",
+                            Name = "Camping",
+                            Slug = "camping"
                         },
                         new
                         {
                             Id = 3,
-                            ColorHex = "#FF9800",
-                            Description = "Study materials and learning notes",
-                            Name = "Study"
+                            ColorHex = "#2196F3",
+                            Description = "Bikes, skis, sports gear",
+                            Name = "Sports",
+                            Slug = "sports"
                         },
                         new
                         {
                             Id = 4,
-                            ColorHex = "#E91E63",
-                            Description = "Shopping lists and reminders",
-                            Name = "Shopping"
+                            ColorHex = "#9C27B0",
+                            Description = "Cameras, projectors, audio",
+                            Name = "Electronics",
+                            Slug = "electronics"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            ColorHex = "#FF9800",
+                            Description = "Board games, party games",
+                            Name = "Games",
+                            Slug = "games"
                         });
                 });
 
-            modelBuilder.Entity("RentalApp.Database.Models.Note", b =>
+            modelBuilder.Entity("RentalApp.Database.Models.Item", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -90,17 +110,27 @@ namespace RentalApp.Database.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CategoryId")
+                    b.Property<int>("CategoryId")
                         .HasColumnType("integer");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Importance")
+                    b.Property<decimal>("DailyRate")
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("OwnerId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Title")
@@ -117,7 +147,91 @@ namespace RentalApp.Database.Migrations
 
                     b.HasIndex("CreatedAt");
 
-                    b.ToTable("notes");
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("items");
+                });
+
+            modelBuilder.Entity("RentalApp.Database.Models.Rental", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("BorrowerId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BorrowerId");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("ItemId", "Status");
+
+                    b.ToTable("rentals");
+                });
+
+            modelBuilder.Entity("RentalApp.Database.Models.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RentalId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ReviewerId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RentalId")
+                        .IsUnique();
+
+                    b.HasIndex("ReviewerId");
+
+                    b.ToTable("reviews");
                 });
 
             modelBuilder.Entity("RentalApp.Database.Models.Role", b =>
@@ -261,14 +375,61 @@ namespace RentalApp.Database.Migrations
                     b.ToTable("user_role");
                 });
 
-            modelBuilder.Entity("RentalApp.Database.Models.Note", b =>
+            modelBuilder.Entity("RentalApp.Database.Models.Item", b =>
                 {
                     b.HasOne("RentalApp.Database.Models.Category", "Category")
-                        .WithMany("Notes")
+                        .WithMany("Items")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RentalApp.Database.Models.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Category");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("RentalApp.Database.Models.Rental", b =>
+                {
+                    b.HasOne("RentalApp.Database.Models.User", "Borrower")
+                        .WithMany()
+                        .HasForeignKey("BorrowerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RentalApp.Database.Models.Item", "Item")
+                        .WithMany("Rentals")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Borrower");
+
+                    b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("RentalApp.Database.Models.Review", b =>
+                {
+                    b.HasOne("RentalApp.Database.Models.Rental", "Rental")
+                        .WithOne("Review")
+                        .HasForeignKey("RentalApp.Database.Models.Review", "RentalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RentalApp.Database.Models.User", "Reviewer")
+                        .WithMany()
+                        .HasForeignKey("ReviewerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Rental");
+
+                    b.Navigation("Reviewer");
                 });
 
             modelBuilder.Entity("RentalApp.Database.Models.UserRole", b =>
@@ -292,7 +453,17 @@ namespace RentalApp.Database.Migrations
 
             modelBuilder.Entity("RentalApp.Database.Models.Category", b =>
                 {
-                    b.Navigation("Notes");
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("RentalApp.Database.Models.Item", b =>
+                {
+                    b.Navigation("Rentals");
+                });
+
+            modelBuilder.Entity("RentalApp.Database.Models.Rental", b =>
+                {
+                    b.Navigation("Review");
                 });
 
             modelBuilder.Entity("RentalApp.Database.Models.Role", b =>

@@ -3,19 +3,43 @@
        xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        xmlns:views="clr-namespace:RentalApp.Views"
-       Shell.FlyoutBehavior="Flyout">
+       Shell.FlyoutBehavior="Disabled">
 
-    <!-- Define flyout items (sidebar menu) -->
-    <FlyoutItem Title="Notes" Icon="notes_icon.png">
-        <ShellContent Title="My Notes"
-                      ContentTemplate="{DataTemplate views:NotesPage}"
-                      Route="notes" />
+    <!--
+        First child of the Shell = first page the user sees.
+        Login is shown on app start; flyout is disabled here so users
+        can't bypass it. After successful login the LoginViewModel
+        navigates to "//items" which switches Shell to the main app section.
+    -->
+    <ShellContent Route="login"
+                  ContentTemplate="{DataTemplate views:LoginPage}"
+                  Shell.FlyoutBehavior="Disabled" />
+
+    <FlyoutItem Title="Marketplace"
+                Icon="home.png"
+                Shell.FlyoutBehavior="Flyout">
+        <ShellContent Title="Items"
+                      ContentTemplate="{DataTemplate views:ItemsListPage}"
+                      Route="items" />
+        <ShellContent Title="Requests"
+                      ContentTemplate="{DataTemplate views:IncomingRequestsPage}"
+                      Route="incoming-requests" />
+        <ShellContent Title="List Item"
+                      ContentTemplate="{DataTemplate views:CreateItemPage}"
+                      Route="create-item" />
     </FlyoutItem>
 
-    <FlyoutItem Title="About" Icon="info_icon.png">
+    <FlyoutItem Title="About"
+                Icon="icon_about.png"
+                FlyoutDisplayOptions="AsSingleItem"
+                Shell.FlyoutBehavior="Flyout">
         <ShellContent Title="About"
                       ContentTemplate="{DataTemplate views:AboutPage}"
                       Route="about" />
     </FlyoutItem>
+
+    <MenuItem Text="Log out"
+              IconImageSource="logout.png"
+              Clicked="OnLogoutClicked" />
 
 </Shell>

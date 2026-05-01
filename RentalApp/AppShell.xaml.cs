@@ -1,14 +1,31 @@
-﻿using RentalApp.Views;
+using RentalApp.Views;
+using RentalApp.Services;
 
 namespace RentalApp;
 
 public partial class AppShell : Shell
 {
-    public AppShell()
+    private readonly IAuthenticationService _authService;
+
+    public AppShell(IAuthenticationService authService)
     {
+        _authService = authService;
         InitializeComponent();
 
-        // Register routes for navigation
-        Routing.RegisterRoute("note", typeof(NotePage));
+        // Routes for pages that aren't direct children of the Shell.
+        Routing.RegisterRoute(nameof(RegisterPage), typeof(RegisterPage));
+        Routing.RegisterRoute(nameof(ItemDetailPage), typeof(ItemDetailPage));
+        Routing.RegisterRoute(nameof(CreateItemPage), typeof(CreateItemPage));
+    }
+
+    /// <summary>
+    /// This signs the current user out, clears the saved API token, closes the
+    /// flyout, and returns the app to the login route.
+    /// </summary>
+    private async void OnLogoutClicked(object sender, EventArgs e)
+    {
+        await _authService.LogoutAsync();
+        FlyoutIsPresented = false;
+        await GoToAsync("//login");
     }
 }
