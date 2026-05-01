@@ -1,0 +1,312 @@
+================================================================================
+RentalApp - Setup & Daily Commands Cheatsheet
+================================================================================
+Saved here so you don't have to remember the flags. Run all dotnet/psql
+commands from INSIDE the dev container terminal (VS Code) unless noted.
+
+
+================================================================================
+0. Quick reference (the commands you'll forget first)
+================================================================================
+
+  Build MAUI:    dotnet build RentalApp/RentalApp.csproj -f net9.0-android -c Debug
+  Run tests:     dotnet test  RentalApp.Tests/RentalApp.Tests.csproj
+  Add migration: dotnet ef migrations add <Name> \
+                   --project RentalApp.Database --startup-project RentalApp.Migrations
+  Apply DB:      dotnet ef database update \
+                   --project RentalApp.Database --startup-project RentalApp.Migrations
+  psql dev:      psql "$CONNECTION_STRING"
+  psql test DB:  psql "Host=localhost;Username=app_user;Password=app_password;Database=testappdb"
+  Deploy APK:    adb install -r RentalApp/bin/Debug/net9.0-android/com.companyname.starterapp-Signed.apk
+                 adb shell monkey -p com.companyname.starterapp -c android.intent.category.LAUNCHER 1
+
+
+================================================================================
+1. Daily startup
+================================================================================
+
+On the host:
+  1. Make sure Docker Desktop is running.
+  2. (Optional) Start the Android emulator if you plan to deploy.
+  3. Open the RentalApp folder in VS Code.
+  4. Click "Reopen in Container" when prompted, or:
+       Command Palette -> "Dev Containers: Reopen in Container"
+  5. Wait until the status bar shows the project count (3, or 4 with tests).
+
+The Postgres container (`db`) starts automatically alongside the dev container.
+Inside the dev container, `localhost:5432` IS the Postgres server because
+docker-compose uses `network_mode: service:db` (shared network namespace).
+
+
+================================================================================
+2. First-time setup after a fresh clone
+================================================================================
+
+  cd /workspace
+  dotnet clean
+  dotnet restore                       # retry on NU1301 (see section 7)
+  dotnet build -c Debug
+
+  # The dev container ships without psql. Install it once per container build
+  # so the commands in section 6 work:
+  apt-get update && apt-get install -y postgresql-client
+
+If dotnet build hangs at _CompileResources for >10 seconds:
+  pgrep -a dotnet                      # find the build process number
+  kill -9 <PID>                        # the dotnet build PID
+  exit                                 # close that terminal
+  # back in the original terminal:
+  dotnet build -c Debug
+
+
+================================================================================
+3. Build & deploy to the Android emulator
+================================================================================
+
+Build only the MAUI project (don't try to multi-target the libraries):
+
+  dotnet build RentalApp/RentalApp.csproj -f net9.0-android -c Debug
+
+APK location:
+  RentalApp/bin/Debug/net9.0-android/com.companyname.starterapp-Signed.apk
+
+`dotnet build -t:Run` often fails with XA0010 "No available device" inside
+the dev container even when the emulator is up. Workaround - manual adb:
+
+  adb devices                          # confirm emulator-5554 is listed
+  adb uninstall com.companyname.starterapp                          # optional
+  adb install -r RentalApp/bin/Debug/net9.0-android/com.companyname.starterapp-Signed.apk
+  adb shell monkey -p com.companyname.starterapp -c android.intent.category.LAUNCHER 1
+
+Force-stop a running app for a clean state:
+  adb shell am force-stop com.companyname.starterapp
+
+
+================================================================================
+4. Database & EF Core migrations
+================================================================================
+
+Connection (from docker-compose.yml CONNECTION_STRING env var):
+  Host=localhost
+  Username=app_user
+  Password=app_password
+  Database=appdb
+Test DB (created on demand by DatabaseFixture):  testappdb
+
+Where things live:
+  Migrations files:   RentalApp.Database/Migrations/
+  Migrations runner:  RentalApp.Migrations/Program.cs   (Exe project)
+  DbContext:          RentalApp.Database/Data/AppDbContext.cs
+
+Standard add-and-apply cycle:
+
+  cd /workspace
+  dotnet ef migrations add <NameOfMigration> \
+    --project RentalApp.Database \
+    --startup-project RentalApp.Migrations
+
+  dotnet ef database update \
+    --project RentalApp.Database \
+    --startup-project RentalApp.Migrations
+
+Other useful EF commands (always pass both --project flags):
+
+  # Undo the most recent UNAPPLIED migration (keeps snapshot consistent)
+  dotnet ef migrations remove \
+    --project RentalApp.Database \
+    --startup-project RentalApp.Migrations
+
+  # Roll the DB back/forward to a specific migration
+  dotnet ef database update <MigrationNameOr 0> \
+    --project RentalApp.Database \
+    --startup-project RentalApp.Migrations
+
+  # Show all migrations and which are applied
+  dotnet ef migrations list \
+    --project RentalApp.Database \
+    --startup-project RentalApp.Migrations
+
+  # Print connection info / verify the DbContext is happy
+  dotnet ef dbcontext info \
+    --project RentalApp.Database \
+    --startup-project RentalApp.Migrations
+
+NEVER manually delete the *DbContextModelSnapshot.cs file. Use
+`dotnet ef migrations remove` instead - it reverts the snapshot for you.
+
+	if dotnet ef not working
+	dotnet tool install --global dotnet-ef --version 9.*
+	echo 'export PATH="$PATH:/root/.dotnet/tools"' >> ~/.bashrc
+	export PATH="$PATH:/root/.dotnet/tools"
+	dotnet ef --version
+
+================================================================================
+5. Unit tests (Tutorial 6)
+================================================================================
+
+  cd /workspace
+  dotnet restore RentalApp.Tests/RentalApp.Tests.csproj
+  dotnet test    RentalApp.Tests/RentalApp.Tests.csproj
+
+Expected: Passed: 5, Failed: 0.
+The fixture creates and seeds `testappdb` on the first run.
+
+What's needed and what's NOT:
+  Required:  Postgres reachable on localhost:5432 (it is, via docker-compose).
+  NOT needed: Android emulator, MAUI build, NetTopologySuite, anything UI.
+
+Run a single test by name:
+  dotnet test RentalApp.Tests/RentalApp.Tests.csproj \
+    --filter "FullyQualifiedName~CreateNoteAsync_WithValidNote_ShouldAssignId"
+
+Collect code coverage (used by CI later):
+  dotnet test RentalApp.Tests/RentalApp.Tests.csproj \
+    --collect:"XPlat Code Coverage"
+
+Drop the test DB to force a fresh fixture build next run:
+  psql "$CONNECTION_STRING" -c "DROP DATABASE IF EXISTS testappdb;"
+
+
+================================================================================
+6. psql cheatsheet
+================================================================================
+
+Open a psql session against the dev DB:
+  psql "$CONNECTION_STRING"
+
+Against the test DB:
+  psql "Host=localhost;Username=app_user;Password=app_password;Database=testappdb"
+
+Inside psql:
+  \l                                   # list databases
+  \dt                                  # list tables in current DB
+  \d notes                             # describe the notes table
+  \q                                   # quit
+  SELECT * FROM categories;
+  SELECT * FROM notes ORDER BY "CreatedAt" DESC LIMIT 10;
+  SELECT * FROM "__EFMigrationsHistory";       # which migrations are applied
+
+Note: PascalCase column names like "CreatedAt", "CategoryId", "Id" must be
+double-quoted in raw SQL because Postgres lowercases unquoted identifiers.
+
+
+================================================================================
+7. Common troubleshooting
+================================================================================
+
+NU1301 "Unable to load the service index for source nuget.org":
+  Network blip during package restore. Retry:
+    dotnet restore
+  If it keeps failing:
+    dotnet nuget locals all --clear
+    dotnet restore
+  If still failing: rebuild the dev container.
+
+XA0010 "No available device" on `dotnet build -t:Run`:
+  Skip -t:Run. Use the manual adb install + monkey commands (section 3).
+
+Build hangs at _CompileResources:
+  See section 2: pgrep dotnet, kill -9 the process, retry.
+
+42P07 "relation already exists" when applying a migration:
+  The migration is trying to recreate tables that already exist - usually
+  because a snapshot was deleted manually instead of via `migrations remove`.
+  Fix:
+    dotnet ef migrations remove \
+      --project RentalApp.Database \
+      --startup-project RentalApp.Migrations
+  ...then regenerate the migration cleanly.
+
+"role postgres does not exist" from psql:
+  Wrong credentials. Use app_user / app_password / appdb (not postgres).
+
+NETSDK1005 errors when building a class library with -f net9.0-android:
+  You're targeting an Android framework on a non-Android project. Build the
+  MAUI project specifically (section 3) - the libraries don't need a TFM.
+
+Tests start failing with "database does not exist" or stale state:
+  Drop testappdb and rerun:
+    psql "$CONNECTION_STRING" -c "DROP DATABASE IF EXISTS testappdb;"
+    dotnet test RentalApp.Tests/RentalApp.Tests.csproj
+
+
+================================================================================
+8. Git workflow
+================================================================================
+
+  git status                           # what's changed
+  git add <files>                      # stage
+  git commit -m "message"
+  git push
+  git log --oneline -20                # last 20 commits
+  git diff                             # unstaged changes
+  git diff --staged                    # staged but uncommitted
+
+Cache HTTPS credentials (already set up via browser OAuth):
+  git config --global credential.helper store
+
+
+================================================================================
+9. Headed for the coursework (RentalApp) - reference for later
+================================================================================
+
+When you're ready to start the coursework (Tier 3 / Distinction target):
+
+  - Create new public GitHub repo: pabluchiyague/RentalApp
+  - Clone RentalApp to a new folder, delete .git, `git init`, set new remote
+  - Rename: RentalApp -> RentalApp everywhere (folders, .csproj, .sln,
+    namespaces, package id in .csproj)
+  - Delete note-specific code:
+      NoteViewModel.cs, NotesViewModel.cs
+      NotePage.xaml(.cs), NotesPage.xaml(.cs)
+      Note.cs, Category.cs (will be replaced)
+      NoteRepository.cs, INoteRepository.cs
+      AddNoteImportance + SeedHealthCategory migrations + the snapshot
+      NoteRepositoryTests.cs (will be replaced with new tests)
+  - Keep:
+      Dockerfile, .devcontainer/, docker-compose.yml (swap to postgis image)
+      MauiProgram.cs skeleton, AppDbContext.cs (drop entity configs only)
+      BaseViewModel, INavigationService + impl, App.xaml, AppShell.xaml
+      Bool/text converters, .gitignore, DatabaseFixture pattern
+  - In docker-compose.yml: replace `image: postgres:16` with
+      `image: postgis/postgis:16-3.4`
+  - Add NuGet packages:
+      NetTopologySuite, Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite,
+      MediatR (if doing the bonus)
+  - First commit message: "Initial scaffold based on RentalApp"
+
+
+================================================================================
+10. Project layout (quick reference)
+================================================================================
+
+  RentalApp/                          # MAUI app (net9.0-android)
+    Views/        XAML pages
+    ViewModels/   MVVM view-models with [ObservableProperty] / [RelayCommand]
+    Services/     INavigationService etc.
+    Converters/   bool-to-text, etc.
+    MauiProgram.cs                     # DI registrations
+    RentalApp.csproj
+
+  RentalApp.Database/                 # Class lib (net9.0)
+    Data/AppDbContext.cs               # reads CONNECTION_STRING env var
+    Models/                            # Note, Category, NoteImportance enum
+    Repositories/                      # INoteRepository + NoteRepository
+    Migrations/                        # EF migrations + snapshot
+    appsettings.json                   # fallback for non-container runs
+
+  RentalApp.Migrations/               # Console app (net9.0, Exe)
+    Program.cs                         # context.Database.Migrate() runner
+
+  RentalApp.Tests/                    # xUnit (net9.0)
+    DatabaseFixture.cs                 # spins up testappdb via Migrate()
+    NoteRepositoryTests.cs             # 5 tests, AAA, IClassFixture
+
+  docker-compose.yml                   # `app` (dev container) + `db` (postgres)
+  .devcontainer/                       # VS Code dev container config
+  Dockerfile                           # base image used by `app`
+
+
+================================================================================
+End of cheatsheet
+================================================================================

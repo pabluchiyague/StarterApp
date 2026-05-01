@@ -44,10 +44,10 @@ public partial class LoginViewModel : BaseViewModel
         Title = "Login";
     }
 
-    /// @brief Initializes a new instance of the LoginViewModel class
-    /// @param authService The authentication service instance
-    /// @param navigationService The navigation service instance
-    /// @details Sets up the required services and initializes the title
+    /// <summary>
+    /// This stores the authentication and navigation services used by the login
+    /// commands and sets the page title.
+    /// </summary>
     public LoginViewModel(IAuthenticationService authService, INavigationService navigationService)
     {
         _authService = authService;
@@ -55,9 +55,10 @@ public partial class LoginViewModel : BaseViewModel
         Title = "Login";
     }
 
-    /// @brief Performs user login authentication
-    /// @details Relay command that validates input and attempts to authenticate the user
-    /// @return A task representing the asynchronous login operation
+    /// <summary>
+    /// This validates the entered credentials, signs in through the active
+    /// authentication service, and navigates to the shared API item browser.
+    /// </summary>
     [RelayCommand]
     private async Task LoginAsync()
     {
@@ -79,9 +80,7 @@ public partial class LoginViewModel : BaseViewModel
 
             if (result.IsSuccess)
             {
-                // Absolute route — switches Shell from the hidden login
-                // ShellContent to the Notes FlyoutItem section.
-                await Shell.Current.GoToAsync("//notes");
+                await Shell.Current.GoToAsync("//items");
             }
             else
             {
@@ -98,9 +97,10 @@ public partial class LoginViewModel : BaseViewModel
         }
     }
 
-    /// @brief Navigates to the registration page
-    /// @details Relay command that navigates to the user registration page
-    /// @return A task representing the asynchronous navigation operation
+    /// <summary>
+    /// This navigates to the registration page so the user can create a live
+    /// API account.
+    /// </summary>
     [RelayCommand]
     private async Task NavigateToRegisterAsync()
     {
@@ -108,10 +108,10 @@ public partial class LoginViewModel : BaseViewModel
         await _navigationService.NavigateToAsync(nameof(RegisterPage));
     }
 
-    /// @brief Handles forgot password functionality
-    /// @details Relay command that displays a placeholder message for forgot password
-    /// @return A task representing the asynchronous operation
-    /// @todo Implement actual forgot password functionality
+    /// <summary>
+    /// This displays the current placeholder message because the coursework API
+    /// does not define a forgot-password endpoint.
+    /// </summary>
     [RelayCommand]
     private async Task ForgotPasswordAsync()
     {

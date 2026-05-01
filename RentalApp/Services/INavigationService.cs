@@ -8,16 +8,16 @@ namespace RentalApp.Services;
 /// </summary>
 public interface INavigationService
 {
-    /// <summary>Navigate to a registered Shell route (e.g. "note", "about").</summary>
+    /// <summary>Navigate to a registered Shell route (e.g. "items", "about").</summary>
     Task NavigateToAsync(string route);
 
-    /// <summary>Navigate to a route passing query parameters (e.g. note id).</summary>
+    /// <summary>Navigate to a route passing query parameters.</summary>
     Task NavigateToAsync(string route, Dictionary<string, object> parameters);
 
     /// <summary>Pop one page off the navigation stack.</summary>
     Task NavigateBackAsync();
 
-    /// <summary>Jump to the application root (the Notes list).</summary>
+    /// <summary>Jump to the application root.</summary>
     Task NavigateToRootAsync();
 
     /// <summary>Pop every modal/pushed page back to the Shell root.</summary>

@@ -5,39 +5,40 @@ using Microsoft.EntityFrameworkCore;
 namespace RentalApp.Database.Models;
 
 /// <summary>
-/// Represents a category for organizing notes
+/// A rental category. Maps to the API's category contract:
+/// the integer <see cref="Id"/> is used by EF / local writes, while the
+/// lowercase <see cref="Slug"/> matches the value passed in API filters
+/// such as <c>GET /items?category=tools</c>.
 /// </summary>
 [Table("categories")]
 [PrimaryKey(nameof(Id))]
 public class Category
 {
-    /// <summary>
-    /// Primary key
-    /// </summary>
+    /// <summary>Primary key.</summary>
     public int Id { get; set; }
 
-    /// <summary>
-    /// Category name (e.g., "Work", "Personal", "Study")
-    /// </summary>
+    /// <summary>Display name (e.g., "Tools", "Camping").</summary>
     [Required]
     [MaxLength(50)]
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// Hex color code for visual identification (e.g., "#FF5733")
+    /// URL-safe lowercase identifier the API uses for filtering
+    /// (e.g., "tools" for the "Tools" category).
     /// </summary>
     [Required]
-    [MaxLength(7)]
-    public string ColorHex { get; set; } = "#808080";  // Default gray
+    [MaxLength(50)]
+    public string Slug { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Optional description of category purpose
-    /// </summary>
+    /// <summary>Hex color used by UI badges (e.g., "#F44336").</summary>
+    [Required]
+    [MaxLength(7)]
+    public string ColorHex { get; set; } = "#808080";
+
+    /// <summary>Optional human-readable description.</summary>
     [MaxLength(200)]
     public string? Description { get; set; }
 
-    /// <summary>
-    /// Navigation property: All notes in this category
-    /// </summary>
-    public List<Note> Notes { get; set; } = new List<Note>();
+    /// <summary>Navigation property: all items in this category.</summary>
+    public List<Item> Items { get; set; } = new List<Item>();
 }

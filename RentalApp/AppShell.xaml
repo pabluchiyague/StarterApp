@@ -9,30 +9,37 @@
         First child of the Shell = first page the user sees.
         Login is shown on app start; flyout is disabled here so users
         can't bypass it. After successful login the LoginViewModel
-        navigates to "//notes" which switches Shell to the FlyoutItem
-        section below.
+        navigates to "//items" which switches Shell to the main app section.
     -->
     <ShellContent Route="login"
                   ContentTemplate="{DataTemplate views:LoginPage}"
                   Shell.FlyoutBehavior="Disabled" />
 
-    <!-- Post-login content: visible flyout once authenticated -->
-    <FlyoutItem Title="Notes"
-                Icon="notes_icon.png"
-                FlyoutDisplayOptions="AsSingleItem"
+    <FlyoutItem Title="Marketplace"
+                Icon="home.png"
                 Shell.FlyoutBehavior="Flyout">
-        <ShellContent Title="My Notes"
-                      ContentTemplate="{DataTemplate views:NotesPage}"
-                      Route="notes" />
+        <ShellContent Title="Items"
+                      ContentTemplate="{DataTemplate views:ItemsListPage}"
+                      Route="items" />
+        <ShellContent Title="Requests"
+                      ContentTemplate="{DataTemplate views:IncomingRequestsPage}"
+                      Route="incoming-requests" />
+        <ShellContent Title="List Item"
+                      ContentTemplate="{DataTemplate views:CreateItemPage}"
+                      Route="create-item" />
     </FlyoutItem>
 
     <FlyoutItem Title="About"
-                Icon="info_icon.png"
+                Icon="icon_about.png"
                 FlyoutDisplayOptions="AsSingleItem"
                 Shell.FlyoutBehavior="Flyout">
         <ShellContent Title="About"
                       ContentTemplate="{DataTemplate views:AboutPage}"
                       Route="about" />
     </FlyoutItem>
+
+    <MenuItem Text="Log out"
+              IconImageSource="logout.png"
+              Clicked="OnLogoutClicked" />
 
 </Shell>

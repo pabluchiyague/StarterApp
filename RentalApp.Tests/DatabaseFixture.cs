@@ -6,12 +6,14 @@ namespace RentalApp.Tests;
 
 /// <summary>
 /// xUnit fixture that boots an isolated PostgreSQL database (testappdb)
-/// for the lifetime of a test class. The fixture:
+/// for the lifetime of a test run. The fixture:
 ///   - Switches the CONNECTION_STRING env var to point at the test DB
 ///   - Drops and recreates the DB via the production migration set
-///   - Optionally seeds a known Note for tests that need pre-existing data
-/// IClassFixture&lt;DatabaseFixture&gt; on a test class causes xUnit to
-/// instantiate this once per class and inject it into the constructor.
+///   - Optionally seeds a known User + Item for tests that need
+///     pre-existing data
+///
+/// All tests in the suite share this fixture via <c>[Collection("Database")]</c>
+/// — see <see cref="DatabaseCollection"/>.
 /// </summary>
 public class DatabaseFixture
 {
@@ -19,41 +21,56 @@ public class DatabaseFixture
 
     public DatabaseFixture()
     {
-        // Point AppDbContext at a separate test database. The production
-        // AppDbContext.OnConfiguring already reads CONNECTION_STRING, so we
-        // just override the env var for this test process.
         var testConn = "Host=localhost;Username=app_user;Password=app_password;Database=testappdb";
         Environment.SetEnvironmentVariable("CONNECTION_STRING", testConn);
 
         TestDbContext = new AppDbContext();
 
-        // Repeatable clean state on every run
+        // Repeatable clean state on every run.
         TestDbContext.Database.EnsureDeleted();
         TestDbContext.Database.Migrate();
     }
 
     /// <summary>
-    /// Adds a single seed note. Idempotent: safe to call from every test
-    /// class constructor. The default categories (Personal, Work, Study,
-    /// Shopping, Health) are already inserted by EF migrations via
-    /// AppDbContext.SeedData / SeedHealthCategory.
+    /// Adds one seed user and one seed item under the "Tools" category.
+    /// Idempotent — safe to call from every test class constructor.
+    /// Default categories and roles are inserted by EF migrations via
+    /// <c>AppDbContext.SeedRoles</c> / <c>SeedCategories</c>.
     /// </summary>
     internal void Seed()
     {
-        if (TestDbContext.Notes.Any()) return;
+        if (TestDbContext.Items.Any()) return;
 
-        var work = TestDbContext.Categories.First(c => c.Name == "Work");
-
-        var note = new Note
+        // Seed user (used as the owner of the seed item)
+        var owner = new User
         {
-            Title = "Seed note",
-            Content = "Seeded by the fixture",
-            CategoryId = work.Id,
-            Importance = NoteImportance.Normal,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            FirstName    = "Seed",
+            LastName     = "Owner",
+            Email        = "seed.owner@example.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Sup3rSecret!"),
+            PasswordSalt = string.Empty,
+            CreatedAt    = DateTime.UtcNow,
+            UpdatedAt    = DateTime.UtcNow,
+            IsActive     = true,
         };
-        TestDbContext.Notes.Add(note);
+        TestDbContext.Users.Add(owner);
+        TestDbContext.SaveChanges();
+
+        // Seed item under the "Tools" category (already inserted by migration)
+        var tools = TestDbContext.Categories.First(c => c.Slug == "tools");
+
+        var item = new Item
+        {
+            Title       = "Seed drill",
+            Description = "Cordless drill — seeded by the fixture",
+            DailyRate   = 5.00m,
+            CategoryId  = tools.Id,
+            OwnerId     = owner.Id,
+            IsAvailable = true,
+            CreatedAt   = DateTime.UtcNow,
+            UpdatedAt   = DateTime.UtcNow,
+        };
+        TestDbContext.Items.Add(item);
         TestDbContext.SaveChanges();
     }
 }

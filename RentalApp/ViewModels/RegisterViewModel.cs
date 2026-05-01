@@ -59,10 +59,10 @@ public partial class RegisterViewModel : BaseViewModel
         Title = "Register";
     }
 
-    /// @brief Initializes a new instance of the RegisterViewModel class
-    /// @param authService The authentication service instance
-    /// @param navigationService The navigation service instance
-    /// @details Sets up the required services and initializes the title
+    /// <summary>
+    /// This stores the authentication and navigation services used by the
+    /// registration commands and sets the page title.
+    /// </summary>
     public RegisterViewModel(IAuthenticationService authService, INavigationService navigationService)
     {
         _authService = authService;
@@ -70,9 +70,10 @@ public partial class RegisterViewModel : BaseViewModel
         Title = "Register";
     }
 
-    /// @brief Registers a new user account
-    /// @details Relay command that validates form data and attempts to register the user
-    /// @return A task representing the asynchronous registration operation
+    /// <summary>
+    /// This validates the form, sends the registration request to the active
+    /// authentication service, and returns to login when the API accepts it.
+    /// </summary>
     [RelayCommand]
     private async Task RegisterAsync()
     {
@@ -109,18 +110,19 @@ public partial class RegisterViewModel : BaseViewModel
         }
     }
 
-    /// @brief Navigates back to the login page
-    /// @details Relay command that returns to the login page
-    /// @return A task representing the asynchronous navigation operation
+    /// <summary>
+    /// This navigates back to the login page without creating an account.
+    /// </summary>
     [RelayCommand]
     private async Task NavigateBackToLoginAsync()
     {
         await _navigationService.NavigateBackAsync();
     }
 
-    /// @brief Validates the registration form data
-    /// @return True if validation passes, false otherwise
-    /// @details Checks all registration requirements and sets appropriate error messages
+    /// <summary>
+    /// This checks every registration field before the API call and stores the
+    /// first validation message that the user needs to fix.
+    /// </summary>
     private bool ValidateForm()
     {
         if (string.IsNullOrWhiteSpace(FirstName))
@@ -153,9 +155,27 @@ public partial class RegisterViewModel : BaseViewModel
             return false;
         }
 
-        if (Password.Length < 6)
+        if (Password.Length < 8)
         {
-            SetError("Password must be at least 6 characters long");
+            SetError("Password must be at least 8 characters long");
+            return false;
+        }
+
+        if (!Password.Any(char.IsUpper))
+        {
+            SetError("Password must contain an uppercase letter");
+            return false;
+        }
+
+        if (!Password.Any(char.IsLower))
+        {
+            SetError("Password must contain a lowercase letter");
+            return false;
+        }
+
+        if (!Password.Any(char.IsDigit))
+        {
+            SetError("Password must contain a number");
             return false;
         }
 
@@ -174,10 +194,9 @@ public partial class RegisterViewModel : BaseViewModel
         return true;
     }
 
-    /// @brief Validates an email address format
-    /// @param email The email address to validate
-    /// @return True if the email format is valid, false otherwise
-    /// @details Uses regex pattern matching to validate email format
+    /// <summary>
+    /// This checks whether an email address has a basic address-like format.
+    /// </summary>
     private static bool IsValidEmail(string email)
     {
         const string emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
