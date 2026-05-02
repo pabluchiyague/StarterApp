@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:viewModels="clr-namespace:RentalApp.ViewModels"
-             x:Class="RentalApp.Views.AboutPage">
-        <ContentPage.BindingContext>
-                <viewModels:AboutViewModel/>
-        </ContentPage.BindingContext>
+             xmlns:models="clr-namespace:RentalApp.Database.Models;assembly=RentalApp.Database"
+             x:Class="RentalApp.Views.AboutPage"
+             Title="Dashboard">
+    <ScrollView>
         <VerticalStackLayout Spacing="10"
-                        Margin="10">
+                             Margin="10">
+                <Label Text="{Binding ErrorMessage}"
+                       TextColor="Red"
+                       IsVisible="{Binding HasError}" />
                 <HorizontalStackLayout Spacing="10">
                         <Image Source="dotnet_bot.png"
                                SemanticProperties.Description="The dot net bot waving hello!"
@@ -22,8 +24,47 @@
                 </HorizontalStackLayout>
 
                 <Label Text="{Binding Message}"/>
-                <Button Text="Learn more..."
-                                Command="{Binding ShowMoreInfoCommand}"/>
+                <Label Text="{Binding UserName}"
+                       FontSize="20"
+                       FontAttributes="Bold" />
+                <Label Text="{Binding UserEmail}" />
+                <Label Text="{Binding AverageRating, StringFormat='Average rating: {0}'}" />
+                <Label Text="{Binding ItemsListed, StringFormat='Items listed: {0}'}" />
+                <Label Text="{Binding RentalsCompleted, StringFormat='Rentals completed: {0}'}" />
+                <Label Text="{Binding UserReviewsTitle}"
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       Margin="0,16,0,0" />
+                <Label Text="No reviews have been left for you yet."
+                       IsVisible="{Binding HasUserReviews, Converter={StaticResource InvertedBoolConverter}}" />
+                <CollectionView ItemsSource="{Binding UserReviews}"
+                                IsVisible="{Binding HasUserReviews}">
+                        <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:Review">
+                                        <Border StrokeThickness="1"
+                                                Stroke="#DDDDDD"
+                                                Padding="12"
+                                                Margin="0,0,0,10">
+                                                <VerticalStackLayout Spacing="6">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                                <Label Text="{Binding Rental.Item.Title, TargetNullValue='Reviewed item'}"
+                                                                       FontAttributes="Bold" />
+                                                                <Label Grid.Column="1"
+                                                                       Text="{Binding Rating, StringFormat='{0}/5'}"
+                                                                       FontAttributes="Bold" />
+                                                        </Grid>
+                                                        <Label Text="{Binding Reviewer.FullName, StringFormat='From: {0}'}" />
+                                                        <Label Text="{Binding Comment}" />
+                                                        <Label Text="{Binding CreatedAt, StringFormat='{0:dd MMM yyyy}'}"
+                                                               FontSize="12"
+                                                               TextColor="#666666" />
+                                                </VerticalStackLayout>
+                                        </Border>
+                                </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                </CollectionView>
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   IsVisible="{Binding IsBusy}" />
         </VerticalStackLayout>
-
+    </ScrollView>
 </ContentPage>

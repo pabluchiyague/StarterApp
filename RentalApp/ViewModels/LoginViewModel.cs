@@ -80,7 +80,7 @@ public partial class LoginViewModel : BaseViewModel
 
             if (result.IsSuccess)
             {
-                await Shell.Current.GoToAsync("//items");
+                await Shell.Current.GoToAsync("//marketplace/items");
             }
             else
             {

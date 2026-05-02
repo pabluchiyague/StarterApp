@@ -5,21 +5,27 @@ using RentalApp.Models.Api;
 
 namespace RentalApp.Tests;
 
-[Collection("Database")]
-public class LocalItemRepositoryTests
+public abstract class LocalItemRepositoryTests
 {
-    private readonly DatabaseFixture _fixture;
-    private readonly LocalItemRepository _repository;
+    protected readonly DatabaseFixture _fixture;
+    protected readonly LocalItemRepository _repository;
 
-    public LocalItemRepositoryTests(DatabaseFixture fixture)
+    protected LocalItemRepositoryTests(DatabaseFixture fixture)
     {
         _fixture = fixture;
         _fixture.Seed();
         _repository = new LocalItemRepository(_fixture.TestDbContext);
     }
 
+    [Collection("Database")]
+    public class CreateItemAsyncTests : LocalItemRepositoryTests
+    {
+        public CreateItemAsyncTests(DatabaseFixture fixture) : base(fixture)
+        {
+        }
+
     [Fact]
-    public async Task CreateItemAsync_AssignsId()
+    public async Task CreateItemAsync_ValidItem_AssignsId()
     {
         var owner = await CreateOwnerAsync("create");
         var category = _fixture.TestDbContext.Categories.Single(c => c.Slug == "tools");
@@ -37,6 +43,14 @@ public class LocalItemRepositoryTests
         Assert.Equal(category.Id, item.CategoryId);
         Assert.Equal(owner.Id, item.OwnerId);
     }
+    }
+
+    [Collection("Database")]
+    public class GetItemByIdAsyncTests : LocalItemRepositoryTests
+    {
+        public GetItemByIdAsyncTests(DatabaseFixture fixture) : base(fixture)
+        {
+        }
 
     [Fact]
     public async Task GetItemByIdAsync_ExistingItem_ReturnsWithCategoryAndOwner()
@@ -66,6 +80,14 @@ public class LocalItemRepositoryTests
 
         Assert.Null(result);
     }
+    }
+
+    [Collection("Database")]
+    public class GetItemsAsyncTests : LocalItemRepositoryTests
+    {
+        public GetItemsAsyncTests(DatabaseFixture fixture) : base(fixture)
+        {
+        }
 
     [Fact]
     public async Task GetItemsAsync_FilteredBySlug_ReturnsOnlyMatching()
@@ -92,6 +114,14 @@ public class LocalItemRepositoryTests
         Assert.Single(result.Items);
         Assert.Equal(unique, result.Items[0].Title);
     }
+    }
+
+    [Collection("Database")]
+    public class UpdateItemAsyncTests : LocalItemRepositoryTests
+    {
+        public UpdateItemAsyncTests(DatabaseFixture fixture) : base(fixture)
+        {
+        }
 
     [Fact]
     public async Task UpdateItemAsync_PartialUpdate_PreservesUntouchedFields()
@@ -119,6 +149,14 @@ public class LocalItemRepositoryTests
 
         Assert.Null(result);
     }
+    }
+
+    [Collection("Database")]
+    public class GetByOwnerAsyncTests : LocalItemRepositoryTests
+    {
+        public GetByOwnerAsyncTests(DatabaseFixture fixture) : base(fixture)
+        {
+        }
 
     [Fact]
     public async Task GetByOwnerAsync_ReturnsOnlyOwnedItems()
@@ -131,8 +169,9 @@ public class LocalItemRepositoryTests
         Assert.NotEmpty(result);
         Assert.All(result, item => Assert.Equal(owner.Id, item.OwnerId));
     }
+    }
 
-    private async Task<User> CreateOwnerAsync(string label)
+    protected async Task<User> CreateOwnerAsync(string label)
     {
         var user = new User
         {
@@ -149,7 +188,7 @@ public class LocalItemRepositoryTests
         return user;
     }
 
-    private async Task<Item> CreateItemInCategoryAsync(int ownerId, string slug, string title)
+    protected async Task<Item> CreateItemInCategoryAsync(int ownerId, string slug, string title)
     {
         var category = await _fixture.TestDbContext.Categories.SingleAsync(c => c.Slug == slug);
         return await _repository.CreateItemAsync(new Item

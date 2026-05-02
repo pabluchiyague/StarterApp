@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace RentalApp.Database.Models;
 
@@ -72,15 +73,21 @@ public class Item
     public double? DistanceKm { get; set; }
 
     /// <summary>
-    /// This keeps the API latitude value with an item while the app is running.
-    /// The local database does not persist it until the later PostGIS phase.
+    /// This stores the persisted PostGIS geography point used by local nearby
+    /// searches. X is longitude and Y is latitude.
+    /// </summary>
+    public Point? Location { get; set; }
+
+    /// <summary>
+    /// This keeps the API latitude value with an item while the app is running
+    /// and mirrors <see cref="Location"/> for view-model form binding.
     /// </summary>
     [NotMapped]
     public double? Latitude { get; set; }
 
     /// <summary>
-    /// This keeps the API longitude value with an item while the app is running.
-    /// The local database does not persist it until the later PostGIS phase.
+    /// This keeps the API longitude value with an item while the app is running
+    /// and mirrors <see cref="Location"/> for view-model form binding.
     /// </summary>
     [NotMapped]
     public double? Longitude { get; set; }

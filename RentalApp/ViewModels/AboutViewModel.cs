@@ -1,47 +1,98 @@
-﻿/// @file AboutViewModel.cs
-/// @brief About page view model for displaying application information
-/// @author RentalApp Development Team
-/// @date 2025
-
+﻿using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Windows.Input;
+using RentalApp.Database.Models;
+using RentalApp.Database.Repositories;
+using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-/// @brief View model for the About page that displays application information
-/// @details Provides basic application information including name, version, and links to more information
-public class AboutViewModel
+public partial class AboutViewModel : BaseViewModel
 {
-    /// @brief Gets the application title from AppInfo
-    /// @return The application name as a string
-    public string Title => AppInfo.Name;
-    
-    /// @brief Gets the application version from AppInfo
-    /// @return The application version string
-    public string Version => AppInfo.VersionString;
-    
-    /// @brief Gets the URL for more information about the application
-    /// @return URL string pointing to MAUI documentation
-    public string MoreInfoUrl => "https://aka.ms/maui";
-    
-    /// @brief Gets a descriptive message about the application technology stack
-    /// @return Description of the app's technology stack
-    public string Message => "This app is written in XAML and C# with .NET MAUI.";
-    
-    /// @brief Command to show more information about the application
-    /// @details Opens the MoreInfoUrl in the default browser
-    public ICommand ShowMoreInfoCommand { get; }
+    private readonly IAuthenticationService _authService;
+    private readonly IReviewRepository _reviewRepository;
 
-    /// @brief Initializes a new instance of the AboutViewModel class
-    /// @details Sets up the ShowMoreInfoCommand with async relay command
-    public AboutViewModel()
+    public string Version => AppInfo.VersionString;
+
+    public string Message => "Peer-to-peer rental marketplace using MAUI, MVVM, repositories, services, JWT API auth, and state-based rental workflow.";
+
+    [ObservableProperty]
+    private string userName = "Not signed in";
+
+    [ObservableProperty]
+    private string userEmail = string.Empty;
+
+    [ObservableProperty]
+    private string averageRating = "No rating yet";
+
+    [ObservableProperty]
+    private string itemsListed = "0";
+
+    [ObservableProperty]
+    private string rentalsCompleted = "0";
+
+    [ObservableProperty]
+    private string userReviewsTitle = "Reviews left for you";
+
+    [ObservableProperty]
+    private ObservableCollection<Review> userReviews = new();
+
+    public bool HasUserReviews => UserReviews.Count > 0;
+
+    public AboutViewModel(IAuthenticationService authService, IReviewRepository reviewRepository)
     {
-        ShowMoreInfoCommand = new AsyncRelayCommand(ShowMoreInfo);
+        _authService = authService;
+        _reviewRepository = reviewRepository;
+        Title = AppInfo.Name;
+        RefreshProfile();
     }
 
-    /// @brief Opens the more information URL in the default browser
-    /// @details Asynchronously launches the default browser with the MoreInfoUrl
-    /// @return A task representing the asynchronous operation
-    async Task ShowMoreInfo() =>
-        await Launcher.Default.OpenAsync(MoreInfoUrl);
+    partial void OnUserReviewsChanged(ObservableCollection<Review> value)
+    {
+        OnPropertyChanged(nameof(HasUserReviews));
+    }
+
+    [RelayCommand]
+    public async Task LoadAsync()
+    {
+        RefreshProfile();
+
+        var user = _authService.CurrentUser;
+        if (user == null)
+        {
+            UserReviews = new ObservableCollection<Review>();
+            UserReviewsTitle = "Reviews left for you";
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            ClearError();
+
+            var result = await _reviewRepository.GetForUserAsync(user.Id, page: 1, pageSize: 10);
+            UserReviews = new ObservableCollection<Review>(result.Items);
+            UserReviewsTitle = result.TotalItems == 1
+                ? "Reviews left for you (1)"
+                : $"Reviews left for you ({result.TotalItems})";
+        }
+        catch (Exception ex)
+        {
+            SetError(ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private void RefreshProfile()
+    {
+        var user = _authService.CurrentUser;
+        UserName = string.IsNullOrWhiteSpace(user?.FullName) ? "Not signed in" : user.FullName;
+        UserEmail = user?.Email ?? string.Empty;
+        AverageRating = user?.AverageRating == null ? "No rating yet" : $"{user.AverageRating:0.0}/5";
+        ItemsListed = user == null ? "0" : user.ItemsListed.ToString();
+        RentalsCompleted = user == null ? "0" : user.RentalsCompleted.ToString();
+    }
 }

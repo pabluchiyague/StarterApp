@@ -25,7 +25,7 @@ public class AppDbContext : DbContext
         var envConn = Environment.GetEnvironmentVariable("CONNECTION_STRING");
         if (!string.IsNullOrEmpty(envConn))
         {
-            optionsBuilder.UseNpgsql(envConn);
+            optionsBuilder.UseNpgsql(envConn, options => options.UseNetTopologySuite());
             return;
         }
 
@@ -41,7 +41,8 @@ public class AppDbContext : DbContext
             .Build();
 
         optionsBuilder.UseNpgsql(
-            config.GetConnectionString("DevelopmentConnection")
+            config.GetConnectionString("DevelopmentConnection"),
+            options => options.UseNetTopologySuite()
         );
     }
 
@@ -59,6 +60,7 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.HasPostgresExtension("postgis");
 
         // ---- User ----
         modelBuilder.Entity<User>(entity =>
@@ -107,6 +109,10 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Title).HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(1000);
             entity.Property(e => e.ImageUrl).HasMaxLength(500);
+            entity.Property(e => e.Location)
+                  .HasColumnType("geography(Point,4326)")
+                  .HasColumnName("location");
+            entity.HasIndex(e => e.Location).HasMethod("GIST");
 
             entity.HasOne(i => i.Category)
                   .WithMany(c => c.Items)

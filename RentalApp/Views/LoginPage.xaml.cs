@@ -21,6 +21,6 @@ public partial class LoginPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        EmailEntry.Focus();
+        Dispatcher.Dispatch(() => EmailEntry.Focus());
     }
 }

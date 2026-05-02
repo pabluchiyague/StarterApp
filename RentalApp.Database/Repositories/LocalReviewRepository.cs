@@ -74,7 +74,7 @@ public class LocalReviewRepository : IReviewRepository
     }
 
     /// <summary>
-    /// This returns paginated reviews written by one user.
+    /// This returns paginated reviews left on items owned by one user.
     /// </summary>
     public async Task<PagedResult<Review>> GetForUserAsync(int userId, int page = 1, int pageSize = 10)
     {
@@ -85,7 +85,9 @@ public class LocalReviewRepository : IReviewRepository
             .Include(r => r.Reviewer)
             .Include(r => r.Rental)
             .ThenInclude(r => r!.Item)
-            .Where(r => r.ReviewerId == userId);
+            .Where(r => r.Rental != null &&
+                        r.Rental.Item != null &&
+                        r.Rental.Item.OwnerId == userId);
 
         return await PageAsync(query, page, pageSize);
     }

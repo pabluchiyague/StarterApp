@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RentalApp.Database.Data;
 
@@ -17,6 +18,7 @@ namespace RentalApp.Database.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasPostgresExtension("postgis")
                 .HasAnnotation("ProductVersion", "9.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -130,6 +132,10 @@ namespace RentalApp.Database.Migrations
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("boolean");
 
+                    b.Property<Point>("Location")
+                        .HasColumnName("location")
+                        .HasColumnType("geography(Point,4326)");
+
                     b.Property<int>("OwnerId")
                         .HasColumnType("integer");
 
@@ -146,6 +152,10 @@ namespace RentalApp.Database.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Location")
+                        .HasDatabaseName("IX_items_location")
+                        .HasMethod("GIST");
 
                     b.HasIndex("OwnerId");
 

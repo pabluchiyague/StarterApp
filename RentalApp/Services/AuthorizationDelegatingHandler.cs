@@ -24,7 +24,13 @@ public class AuthorizationDelegatingHandler : DelegatingHandler
         var token = await _tokenStore.GetTokenAsync();
         var expiresAt = await _tokenStore.GetExpiresAtAsync();
 
-        if (!string.IsNullOrWhiteSpace(token) && (expiresAt == null || expiresAt > DateTime.UtcNow))
+        if (expiresAt != null && expiresAt <= DateTime.UtcNow)
+        {
+            await _tokenStore.ClearAsync();
+            token = null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(token))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }

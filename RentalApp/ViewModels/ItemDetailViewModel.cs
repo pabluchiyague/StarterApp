@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Collections.ObjectModel;
 using RentalApp.Database.Models;
 using RentalApp.Database.Repositories;
 using RentalApp.Models.Api;
@@ -12,6 +13,7 @@ public partial class ItemDetailViewModel : BaseViewModel
 {
     private readonly IItemRepository _repository;
     private readonly IRentalRepository _rentalRepository;
+    private readonly IReviewRepository _reviewRepository;
     private readonly IAuthenticationService _auth;
 
     [ObservableProperty]
@@ -29,11 +31,19 @@ public partial class ItemDetailViewModel : BaseViewModel
     [ObservableProperty]
     private string successMessage = string.Empty;
 
+    [ObservableProperty]
+    private ObservableCollection<Review> reviews = new();
+
+    [ObservableProperty]
+    private string reviewsTitle = "Reviews";
+
     public bool IsOwner => Item != null && _auth.CurrentUser?.Id == Item.OwnerId;
 
     public bool CanRequestRental => Item != null && !IsOwner && Item.IsAvailable;
 
     public bool HasSuccess => !string.IsNullOrWhiteSpace(SuccessMessage);
+
+    public bool HasReviews => Reviews.Count > 0;
 
     /// <summary>
     /// This stores repositories and authentication service used to load item
@@ -42,10 +52,12 @@ public partial class ItemDetailViewModel : BaseViewModel
     public ItemDetailViewModel(
         IItemRepository repository,
         IRentalRepository rentalRepository,
+        IReviewRepository reviewRepository,
         IAuthenticationService auth)
     {
         _repository = repository;
         _rentalRepository = rentalRepository;
+        _reviewRepository = reviewRepository;
         _auth = auth;
         Title = "Item details";
     }
@@ -56,6 +68,15 @@ public partial class ItemDetailViewModel : BaseViewModel
     partial void OnSuccessMessageChanged(string value)
     {
         OnPropertyChanged(nameof(HasSuccess));
+    }
+
+    /// <summary>
+    /// This refreshes the visible review state when the review collection is
+    /// replaced after loading from the repository.
+    /// </summary>
+    partial void OnReviewsChanged(ObservableCollection<Review> value)
+    {
+        OnPropertyChanged(nameof(HasReviews));
     }
 
     /// <summary>
@@ -92,6 +113,11 @@ public partial class ItemDetailViewModel : BaseViewModel
 
             OnPropertyChanged(nameof(IsOwner));
             OnPropertyChanged(nameof(CanRequestRental));
+
+            if (Item != null)
+            {
+                await LoadReviewsAsync();
+            }
         }
         catch (Exception ex)
         {
@@ -101,6 +127,26 @@ public partial class ItemDetailViewModel : BaseViewModel
         {
             IsBusy = false;
         }
+    }
+
+    /// <summary>
+    /// This loads the latest public reviews for the current item so borrowers
+    /// can see previous feedback before requesting a rental.
+    /// </summary>
+    private async Task LoadReviewsAsync()
+    {
+        if (Item == null)
+        {
+            Reviews = new ObservableCollection<Review>();
+            ReviewsTitle = "Reviews";
+            return;
+        }
+
+        var result = await _reviewRepository.GetForItemAsync(Item.Id, page: 1, pageSize: 10);
+        Reviews = new ObservableCollection<Review>(result.Items);
+        ReviewsTitle = result.TotalItems == 1
+            ? "Reviews (1)"
+            : $"Reviews ({result.TotalItems})";
     }
 
     /// <summary>

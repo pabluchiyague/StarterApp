@@ -4,20 +4,26 @@ using RentalApp.Database.Services;
 
 namespace RentalApp.Tests;
 
-[Collection("Database")]
-public class RentalServiceTests
+public abstract class RentalServiceTests
 {
-    private readonly DatabaseFixture _fixture;
-    private readonly LocalRentalRepository _repository;
-    private readonly RentalService _service;
+    protected readonly DatabaseFixture _fixture;
+    protected readonly LocalRentalRepository _repository;
+    protected readonly RentalService _service;
 
-    public RentalServiceTests(DatabaseFixture fixture)
+    protected RentalServiceTests(DatabaseFixture fixture)
     {
         _fixture = fixture;
         _fixture.Seed();
         _repository = new LocalRentalRepository(_fixture.TestDbContext);
         _service = new RentalService(_fixture.TestDbContext, _repository);
     }
+
+    [Collection("Database")]
+    public class RequestRentalAsyncTests : RentalServiceTests
+    {
+        public RequestRentalAsyncTests(DatabaseFixture fixture) : base(fixture)
+        {
+        }
 
     [Fact]
     public async Task RequestRentalAsync_ValidRequest_CreatesRequestedRentalWithInclusiveTotal()
@@ -71,6 +77,14 @@ public class RentalServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _service.RequestRentalAsync(item.Id, borrower.Id, new DateTime(2026, 7, 3), new DateTime(2026, 7, 8)));
     }
+    }
+
+    [Collection("Database")]
+    public class ApproveRentalAsyncTests : RentalServiceTests
+    {
+        public ApproveRentalAsyncTests(DatabaseFixture fixture) : base(fixture)
+        {
+        }
 
     [Fact]
     public async Task ApproveRentalAsync_RequestedRental_UpdatesStatus()
@@ -84,8 +98,9 @@ public class RentalServiceTests
         Assert.Equal(RentalStatus.Approved, approved!.Status);
         Assert.NotNull(approved.ApprovedAt);
     }
+    }
 
-    private async Task<(Item item, User borrower)> CreateItemAndBorrowerAsync(string label)
+    protected async Task<(Item item, User borrower)> CreateItemAndBorrowerAsync(string label)
     {
         var owner = new User
         {
