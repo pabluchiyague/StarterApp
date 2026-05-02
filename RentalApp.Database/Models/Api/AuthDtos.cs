@@ -29,3 +29,15 @@ public class UserDto
     public int?      RentalsCompleted  { get; set; }
     public DateTime? CreatedAt         { get; set; }
 }
+
+/// <summary>GET /users/{id}/profile public profile response.</summary>
+public class UserProfileDto
+{
+    public int             Id               { get; set; }
+    public string          FirstName        { get; set; } = string.Empty;
+    public string          LastName         { get; set; } = string.Empty;
+    public double?         AverageRating    { get; set; }
+    public int             ItemsListed      { get; set; }
+    public int             RentalsCompleted { get; set; }
+    public List<ReviewDto> Reviews          { get; set; } = new();
+}

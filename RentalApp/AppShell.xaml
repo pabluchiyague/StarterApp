@@ -31,6 +31,9 @@
         <ShellContent Title="My Rentals"
                       ContentTemplate="{DataTemplate views:OutgoingRentalsPage}"
                       Route="outgoing-rentals" />
+        <ShellContent Title="Profile"
+                      ContentTemplate="{DataTemplate views:UserProfilePage}"
+                      Route="user-profile" />
         <ShellContent Title="List Item"
                       ContentTemplate="{DataTemplate views:CreateItemPage}"
                       Route="create-item" />

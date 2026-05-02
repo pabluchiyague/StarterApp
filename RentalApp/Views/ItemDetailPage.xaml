@@ -18,6 +18,8 @@
             <Label Text="{Binding Item.Owner.FullName, StringFormat='Owner: {0}'}" />
             <Label Text="{Binding Item.Owner.AverageRating, StringFormat='Owner average rating: {0:0.0}/5',
                                   TargetNullValue='Owner average rating: No rating yet'}" />
+            <Button Text="View owner profile"
+                    Command="{Binding ViewOwnerProfileCommand}" />
             <Label Text="{Binding Item.AverageRating, StringFormat='Item average rating: {0:0.0}/5',
                                   TargetNullValue='Item average rating: No reviews yet'}" />
             <Label Text="{Binding Item.Description}" />
