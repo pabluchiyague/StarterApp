@@ -42,6 +42,7 @@ public static class MauiProgram
         // ---- Navigation ----
         builder.Services.AddSingleton<INavigationService, NavigationService>();
         builder.Services.AddSingleton<ITokenStore, SecureTokenStore>();
+        builder.Services.AddSingleton<ILocationService, LocationService>();
         builder.Services.AddTransient<AuthorizationDelegatingHandler>();
 
         // ---- Shell and App ----
@@ -97,16 +98,23 @@ public static class MauiProgram
             builder.Services.AddScoped<IReviewRepository, LocalReviewRepository>();
         }
         builder.Services.AddScoped<RentalApp.Database.Services.RentalService>();
+        builder.Services.AddScoped<RentalApp.Database.Services.ReviewService>();
 
         // ---- Items ----
         builder.Services.AddTransient<ItemsListViewModel>();
         builder.Services.AddTransient<ItemsListPage>();
+        builder.Services.AddTransient<NearbyItemsViewModel>();
+        builder.Services.AddTransient<NearbyItemsPage>();
         builder.Services.AddTransient<ItemDetailViewModel>();
         builder.Services.AddTransient<ItemDetailPage>();
         builder.Services.AddTransient<CreateItemViewModel>();
         builder.Services.AddTransient<CreateItemPage>();
         builder.Services.AddTransient<IncomingRequestsViewModel>();
         builder.Services.AddTransient<IncomingRequestsPage>();
+        builder.Services.AddTransient<OutgoingRentalsViewModel>();
+        builder.Services.AddTransient<OutgoingRentalsPage>();
+        builder.Services.AddTransient<LeaveReviewViewModel>();
+        builder.Services.AddTransient<LeaveReviewPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

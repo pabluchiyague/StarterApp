@@ -136,6 +136,9 @@ public class ApiAuthenticationService : IAuthenticationService
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
                 Email = dto.Email,
+                AverageRating = dto.AverageRating,
+                ItemsListed = dto.ItemsListed ?? 0,
+                RentalsCompleted = dto.RentalsCompleted ?? 0,
                 IsActive = true,
                 CreatedAt = dto.CreatedAt
             };

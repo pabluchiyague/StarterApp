@@ -3,7 +3,7 @@ using RentalApp.Models.Api;
 
 namespace RentalApp.Database.Repositories;
 
-public interface IItemRepository
+public interface IItemRepository : IRepository<Item>
 {
     Task<PagedResult<Item>> GetItemsAsync(
         string? categorySlug = null,
@@ -18,6 +18,12 @@ public interface IItemRepository
     Task<Item?> UpdateItemAsync(int id, UpdateItemRequest updates);
 
     Task<List<Item>> GetByOwnerAsync(int ownerId);
+
+    Task<NearbySearchResult> GetNearbyAsync(
+        double latitude,
+        double longitude,
+        double radiusKm = 5,
+        string? categorySlug = null);
 
     Task<List<Category>> GetAllCategoriesAsync();
 }

@@ -9,8 +9,10 @@ namespace RentalApp.Tests;
 
 public class ApiItemRepositoryTests
 {
+    public class GetItemsAsyncTests
+    {
     [Fact]
-    public async Task GetItemsAsync_BuildsCorrectQueryString_WithAllFiltersEscaped()
+    public async Task GetItemsAsync_AllFilters_BuildsEscapedQueryString()
     {
         var handler = new FakeHttpMessageHandler(_ => Ok(new PagedResponse<ItemSummaryDto>()));
         var repository = CreateRepository(handler);
@@ -62,9 +64,12 @@ public class ApiItemRepositoryTests
         Assert.Equal(99, item.OwnerId);
         Assert.Equal(4.5, item.AverageRating);
     }
+    }
 
+    public class GetItemByIdAsyncTests
+    {
     [Fact]
-    public async Task GetItemByIdAsync_On404_ReturnsNull()
+    public async Task GetItemByIdAsync_NotFoundResponse_ReturnsNull()
     {
         var repository = CreateRepository(new FakeHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
 
@@ -80,9 +85,12 @@ public class ApiItemRepositoryTests
 
         await Assert.ThrowsAsync<HttpRequestException>(() => repository.GetItemByIdAsync(123));
     }
+    }
 
+    public class CreateItemAsyncTests
+    {
     [Fact]
-    public async Task CreateItemAsync_PostsRightBodyToItemsEndpoint()
+    public async Task CreateItemAsync_ValidItem_PostsRightBodyToItemsEndpoint()
     {
         var handler = new FakeHttpMessageHandler(_ => Created(new ItemDetailDto
         {
@@ -121,7 +129,7 @@ public class ApiItemRepositoryTests
     }
 
     [Fact]
-    public async Task CreateItemAsync_On400_ThrowsArgumentExceptionWithApiMessage()
+    public async Task CreateItemAsync_BadRequest_ThrowsArgumentExceptionWithApiMessage()
     {
         var handler = new FakeHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.BadRequest)
         {
@@ -132,24 +140,77 @@ public class ApiItemRepositoryTests
         var ex = await Assert.ThrowsAsync<ArgumentException>(() => repository.CreateItemAsync(new Item()));
         Assert.Contains("Title is required", ex.Message);
     }
+    }
 
+    public class UpdateItemAsyncTests
+    {
     [Fact]
-    public async Task UpdateItemAsync_On403_ThrowsUnauthorizedAccessException()
+    public async Task UpdateItemAsync_ForbiddenResponse_ThrowsUnauthorizedAccessException()
     {
         var repository = CreateRepository(new FakeHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.Forbidden)));
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             repository.UpdateItemAsync(1, new UpdateItemRequest { Title = "New" }));
     }
+    }
 
+    public class GetNearbyAsyncTests
+    {
     [Fact]
-    public void RentalStatusJsonConverter_RoundTrip_OutForRent()
+    public async Task GetNearbyAsync_ValidSearch_BuildsNearbyQueryAndMapsDistance()
+    {
+        var handler = new FakeHttpMessageHandler(_ => Ok(new NearbyResponse
+        {
+            Items =
+            [
+                new ItemSummaryDto
+                {
+                    Id = 42,
+                    Title = "Nearby drill",
+                    DailyRate = 4m,
+                    CategoryId = 1,
+                    Category = "tools",
+                    OwnerId = 7,
+                    OwnerName = "Owner",
+                    IsAvailable = true,
+                    Latitude = 55.954,
+                    Longitude = -3.19,
+                    Distance = 1.2,
+                    CreatedAt = DateTime.UtcNow
+                }
+            ],
+            SearchLocation = new NearbyOrigin { Latitude = 55.9533, Longitude = -3.1883 },
+            Radius = 5,
+            TotalResults = 1
+        }));
+        var repository = CreateRepository(handler);
+
+        var result = await repository.GetNearbyAsync(55.9533, -3.1883, 5, "tools");
+
+        var requestUri = handler.Requests.Single().RequestUri!.ToString();
+        Assert.Contains("items/nearby", requestUri);
+        Assert.Contains("lat=55.9533", requestUri);
+        Assert.Contains("lon=-3.1883", requestUri);
+        Assert.Contains("radius=5", requestUri);
+        Assert.Contains("category=tools", requestUri);
+
+        var item = Assert.Single(result.Items);
+        Assert.Equal(1.2, item.DistanceKm);
+        Assert.Equal(1, result.TotalResults);
+    }
+    }
+
+    public class RentalStatusJsonConverterTests
+    {
+    [Fact]
+    public void RentalStatusJsonConverter_OutForRent_RoundTripsDisplayName()
     {
         var json = JsonSerializer.Serialize(RentalStatus.OutForRent, ApiJson.Options);
         var status = JsonSerializer.Deserialize<RentalStatus>(json, ApiJson.Options);
 
         Assert.Equal("\"Out for Rent\"", json);
         Assert.Equal(RentalStatus.OutForRent, status);
+    }
     }
 
     private static ApiItemRepository CreateRepository(FakeHttpMessageHandler handler)

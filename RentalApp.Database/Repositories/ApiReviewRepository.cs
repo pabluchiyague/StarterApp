@@ -84,6 +84,18 @@ public class ApiReviewRepository : IReviewRepository
             Rating = dto.Rating,
             Comment = dto.Comment,
             CreatedAt = dto.CreatedAt,
+            Rental = new Rental
+            {
+                Id = dto.RentalId ?? 0,
+                ItemId = dto.ItemId ?? 0,
+                Item = string.IsNullOrWhiteSpace(dto.ItemTitle)
+                    ? null
+                    : new Item
+                    {
+                        Id = dto.ItemId ?? 0,
+                        Title = dto.ItemTitle
+                    }
+            },
             Reviewer = new User
             {
                 Id = dto.ReviewerId,

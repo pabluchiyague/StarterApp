@@ -39,7 +39,7 @@
                                 Stroke="#DDDDDD"
                                 Padding="12"
                                 Margin="0,0,0,10">
-                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto">
                                 <Label Text="{Binding Title}"
                                        FontSize="18"
                                        FontAttributes="Bold" />
@@ -52,6 +52,15 @@
                                        LineBreakMode="TailTruncation"
                                        MaxLines="2" />
                                 <Grid Grid.Row="2"
+                                      Grid.ColumnSpan="2"
+                                      ColumnDefinitions="*,Auto"
+                                      Margin="0,8,0,0">
+                                    <Label Text="{Binding Owner.FullName, StringFormat='Owner: {0}'}" />
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Owner.AverageRating, StringFormat='Owner rating: {0:0.0}/5',
+                                                          TargetNullValue='Owner rating: No rating yet'}" />
+                                </Grid>
+                                <Grid Grid.Row="3"
                                       Grid.ColumnSpan="2"
                                       ColumnDefinitions="*,Auto"
                                       Margin="0,8,0,0">

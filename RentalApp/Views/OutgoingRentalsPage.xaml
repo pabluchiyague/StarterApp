@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RentalApp.Views.OutgoingRentalsPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:RentalApp.Database.Models;assembly=RentalApp.Database"
+             Title="{Binding Title}">
+    <Grid RowDefinitions="Auto,*" Padding="16" RowSpacing="12">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <VerticalStackLayout Spacing="2">
+                <Label Text="My rentals"
+                       FontSize="22"
+                       FontAttributes="Bold" />
+                <Label Text="Track requests you have sent and review completed rentals." />
+            </VerticalStackLayout>
+            <Button Grid.Column="1"
+                    Text="Refresh"
+                    Command="{Binding LoadCommand}" />
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <VerticalStackLayout Spacing="10">
+                <Label Text="{Binding ErrorMessage}"
+                       TextColor="Red"
+                       IsVisible="{Binding HasError}" />
+                <CollectionView ItemsSource="{Binding Rentals}">
+                    <CollectionView.EmptyView>
+                        <Label Text="{Binding EmptyMessage}"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Rental">
+                            <Border StrokeThickness="1"
+                                    Stroke="#DDDDDD"
+                                    Padding="12"
+                                    Margin="0,0,0,10">
+                                <VerticalStackLayout Spacing="8">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                        <Label Text="{Binding Item.Title}"
+                                               FontSize="18"
+                                               FontAttributes="Bold" />
+                                        <Label Grid.Column="1"
+                                               Text="{Binding Status}" />
+                                    </Grid>
+                                    <Label Text="{Binding Item.Owner.FullName, StringFormat='Owner: {0}'}" />
+                                    <Label Text="{Binding StartDate, StringFormat='Start: {0:dd MMM yyyy}'}" />
+                                    <Label Text="{Binding EndDate, StringFormat='End: {0:dd MMM yyyy}'}" />
+                                    <Label Text="{Binding TotalPrice, StringFormat='Total: £{0:0.00}'}"
+                                           FontAttributes="Bold" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                        <Button Text="Returned"
+                                                Command="{Binding BindingContext.MarkReturnedCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}"
+                                                CommandParameter="{Binding .}" />
+                                        <Button Grid.Column="1"
+                                                Text="Review"
+                                                Command="{Binding BindingContext.LeaveReviewCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}"
+                                                CommandParameter="{Binding .}" />
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+        </Grid>
+    </Grid>
+</ContentPage>

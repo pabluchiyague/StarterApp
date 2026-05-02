@@ -14,13 +14,12 @@ namespace RentalApp.Tests;
 /// migration; OrdinaryUser is flagged IsDefault=true so RegisterAsync should
 /// auto-assign it to new accounts.
 /// </summary>
-[Collection("Database")]
-public class AuthenticationServiceTests
+public abstract class AuthenticationServiceTests
 {
-    private readonly DatabaseFixture _fixture;
-    private readonly AuthenticationService _service;
+    protected readonly DatabaseFixture _fixture;
+    protected readonly AuthenticationService _service;
 
-    public AuthenticationServiceTests(DatabaseFixture fixture)
+    protected AuthenticationServiceTests(DatabaseFixture fixture)
     {
         _fixture = fixture;
         _service = new AuthenticationService(_fixture.TestDbContext);
@@ -30,8 +29,15 @@ public class AuthenticationServiceTests
     /// Generates a fresh email per test so the suite is order-independent
     /// and re-runnable against a non-pristine `testappdb`.
     /// </summary>
-    private static string UniqueEmail(string label) =>
+    protected static string UniqueEmail(string label) =>
         $"{label}.{Guid.NewGuid():N}@example.com";
+
+    [Collection("Database")]
+    public class RegisterAsyncTests : AuthenticationServiceTests
+    {
+        public RegisterAsyncTests(DatabaseFixture fixture) : base(fixture)
+        {
+        }
 
     [Fact]
     public async Task RegisterAsync_NewUser_CreatesUserAndAssignsDefaultRole()
@@ -63,6 +69,36 @@ public class AuthenticationServiceTests
             .Single();
         Assert.Equal(RoleConstants.OrdinaryUser, assignedRole);
     }
+
+    [Fact]
+    public async Task RegisterAsync_DuplicateEmail_ReturnsFailure()
+    {
+        // Arrange — register an email once
+        var email = UniqueEmail("register.duplicate");
+        var firstAttempt = await _service.RegisterAsync(
+            "Dana", "Davis", email, "Sup3rSecret!");
+        Assert.True(firstAttempt.IsSuccess);
+
+        // Act — try to register the same email again
+        var secondAttempt = await _service.RegisterAsync(
+            "Eli", "Evans", email, "AnotherPass!");
+
+        // Assert
+        Assert.False(secondAttempt.IsSuccess);
+        Assert.Equal("User with this email already exists", secondAttempt.Message);
+
+        // And there's still only one user with that email
+        var count = _fixture.TestDbContext.Users.Count(u => u.Email == email);
+        Assert.Equal(1, count);
+    }
+    }
+
+    [Collection("Database")]
+    public class LoginAsyncTests : AuthenticationServiceTests
+    {
+        public LoginAsyncTests(DatabaseFixture fixture) : base(fixture)
+        {
+        }
 
     [Fact]
     public async Task LoginAsync_ValidCredentials_ReturnsSuccess()
@@ -122,26 +158,5 @@ public class AuthenticationServiceTests
         Assert.Equal("Invalid email or password", result.Message);
         Assert.False(_service.IsAuthenticated);
     }
-
-    [Fact]
-    public async Task RegisterAsync_DuplicateEmail_ReturnsFailure()
-    {
-        // Arrange — register an email once
-        var email = UniqueEmail("register.duplicate");
-        var firstAttempt = await _service.RegisterAsync(
-            "Dana", "Davis", email, "Sup3rSecret!");
-        Assert.True(firstAttempt.IsSuccess);
-
-        // Act — try to register the same email again
-        var secondAttempt = await _service.RegisterAsync(
-            "Eli", "Evans", email, "AnotherPass!");
-
-        // Assert
-        Assert.False(secondAttempt.IsSuccess);
-        Assert.Equal("User with this email already exists", secondAttempt.Message);
-
-        // And there's still only one user with that email
-        var count = _fixture.TestDbContext.Users.Count(u => u.Email == email);
-        Assert.Equal(1, count);
     }
 }

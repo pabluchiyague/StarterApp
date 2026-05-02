@@ -1,4 +1,6 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using RentalApp.Database.Data;
 using RentalApp.Database.Models;
 
@@ -21,7 +23,7 @@ public class DatabaseFixture
 
     public DatabaseFixture()
     {
-        var testConn = "Host=localhost;Username=app_user;Password=app_password;Database=testappdb";
+        var testConn = BuildTestConnectionString();
         Environment.SetEnvironmentVariable("CONNECTION_STRING", testConn);
 
         TestDbContext = new AppDbContext();
@@ -29,6 +31,57 @@ public class DatabaseFixture
         // Repeatable clean state on every run.
         TestDbContext.Database.EnsureDeleted();
         TestDbContext.Database.Migrate();
+        EnsurePostGisSchema();
+        ReloadPostgresTypes();
+    }
+
+    private static string BuildTestConnectionString()
+    {
+        var configuredConnectionString =
+            Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING") ??
+            Environment.GetEnvironmentVariable("CONNECTION_STRING");
+
+        if (string.IsNullOrWhiteSpace(configuredConnectionString))
+        {
+            configuredConnectionString = "Host=localhost;Port=5433;Username=app_user;Password=app_password;Database=appdb";
+        }
+
+        var builder = new NpgsqlConnectionStringBuilder(configuredConnectionString)
+        {
+            Database = "testappdb"
+        };
+
+        return builder.ConnectionString;
+    }
+
+    private void EnsurePostGisSchema()
+    {
+        TestDbContext.Database.ExecuteSqlRaw("""
+            CREATE EXTENSION IF NOT EXISTS postgis;
+            ALTER TABLE items
+                ADD COLUMN IF NOT EXISTS location geography(Point,4326);
+            CREATE INDEX IF NOT EXISTS "IX_items_location"
+                ON items
+                USING GIST (location);
+            """);
+    }
+
+    private void ReloadPostgresTypes()
+    {
+        var connection = (NpgsqlConnection)TestDbContext.Database.GetDbConnection();
+        var wasClosed = connection.State == ConnectionState.Closed;
+
+        if (wasClosed)
+        {
+            connection.Open();
+        }
+
+        connection.ReloadTypes();
+
+        if (wasClosed)
+        {
+            connection.Close();
+        }
     }
 
     /// <summary>

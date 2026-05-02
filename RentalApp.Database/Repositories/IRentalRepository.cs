@@ -2,7 +2,7 @@ using RentalApp.Database.Models;
 
 namespace RentalApp.Database.Repositories;
 
-public interface IRentalRepository
+public interface IRentalRepository : IRepository<Rental>
 {
     Task<Rental> CreateAsync(Rental rental);
     Task<Rental?> GetByIdAsync(int id);

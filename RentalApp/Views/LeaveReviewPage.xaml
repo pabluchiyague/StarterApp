@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RentalApp.Views.LeaveReviewPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             Title="{Binding Title}">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label Text="{Binding ErrorMessage}"
+                   TextColor="Red"
+                   IsVisible="{Binding HasError}" />
+            <Label Text="{Binding SuccessMessage}"
+                   TextColor="Green"
+                   IsVisible="{Binding HasSuccess}" />
+            <Label Text="{Binding Rental.Item.Title}"
+                   FontSize="22"
+                   FontAttributes="Bold" />
+            <Label Text="{Binding Rental.Status, StringFormat='Status: {0}'}" />
+            <Label Text="Rating" />
+            <Stepper Minimum="1"
+                     Maximum="5"
+                     Increment="1"
+                     Value="{Binding Rating}" />
+            <Label Text="{Binding Rating, StringFormat='{0}/5'}"
+                   FontAttributes="Bold" />
+            <Editor Placeholder="Comment"
+                    Text="{Binding Comment}"
+                    AutoSize="TextChanges"
+                    HeightRequest="140" />
+            <Button Text="Submit review"
+                    Command="{Binding SubmitCommand}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

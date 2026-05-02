@@ -124,6 +124,43 @@ public class ApiItemRepository : IItemRepository
     }
 
     /// <summary>
+    /// This searches the live API for items near a latitude/longitude pair and
+    /// maps the server-calculated distance into each returned item.
+    /// </summary>
+    public async Task<NearbySearchResult> GetNearbyAsync(
+        double latitude,
+        double longitude,
+        double radiusKm = 5,
+        string? categorySlug = null)
+    {
+        radiusKm = Math.Clamp(radiusKm, 0.1, 50);
+        var query = new List<string>
+        {
+            $"lat={latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
+            $"lon={longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
+            $"radius={radiusKm.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
+        };
+
+        if (!string.IsNullOrWhiteSpace(categorySlug))
+        {
+            query.Add($"category={Uri.EscapeDataString(categorySlug)}");
+        }
+
+        var response = await _http.GetAsync($"items/nearby?{string.Join("&", query)}");
+        await ThrowApiErrorAsync(response);
+
+        var dto = await response.Content.ReadFromJsonAsync<NearbyResponse>(ApiJson.Options)
+            ?? new NearbyResponse();
+
+        return new NearbySearchResult(
+            dto.Items.Select(MapSummary).ToList(),
+            dto.SearchLocation.Latitude,
+            dto.SearchLocation.Longitude,
+            dto.Radius,
+            dto.TotalResults);
+    }
+
+    /// <summary>
     /// This loads categories from the live API and accepts either the wrapped
     /// shape or direct array shape described across the coursework notes.
     /// </summary>
@@ -176,7 +213,8 @@ public class ApiItemRepository : IItemRepository
             {
                 Id = dto.OwnerId,
                 FirstName = dto.OwnerName,
-                LastName = string.Empty
+                LastName = string.Empty,
+                AverageRating = dto.OwnerRating
             },
             IsAvailable = dto.IsAvailable,
             ImageUrl = dto.ImageUrl,

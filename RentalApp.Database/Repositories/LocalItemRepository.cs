@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using RentalApp.Database.Data;
 using RentalApp.Database.Models;
 using RentalApp.Models.Api;
@@ -8,6 +9,7 @@ namespace RentalApp.Database.Repositories;
 public class LocalItemRepository : IItemRepository
 {
     private readonly AppDbContext _context;
+    private static readonly GeometryFactory GeometryFactory = new(new PrecisionModel(), 4326);
 
     /// <summary>
     /// This stores the EF Core context used by the local repository when the
@@ -88,6 +90,7 @@ public class LocalItemRepository : IItemRepository
     /// </summary>
     public async Task<Item> CreateItemAsync(Item item)
     {
+        EnsureLocationPoint(item);
         item.CreatedAt = DateTime.UtcNow;
         item.UpdatedAt = DateTime.UtcNow;
         _context.Items.Add(item);
@@ -148,6 +151,55 @@ public class LocalItemRepository : IItemRepository
     }
 
     /// <summary>
+    /// This runs a local PostGIS ST_DWithin search around a latitude/longitude
+    /// origin and returns available items inside the requested radius.
+    /// </summary>
+    public async Task<NearbySearchResult> GetNearbyAsync(
+        double latitude,
+        double longitude,
+        double radiusKm = 5,
+        string? categorySlug = null)
+    {
+        radiusKm = Math.Clamp(radiusKm, 0.1, 50);
+        var radiusMeters = radiusKm * 1000;
+
+        var itemsQuery = _context.Items
+            .FromSqlInterpolated($@"
+                SELECT *
+                FROM items
+                WHERE location IS NOT NULL
+                  AND ""IsAvailable"" = TRUE
+                  AND ST_DWithin(
+                        location,
+                        ST_SetSRID(ST_MakePoint({longitude}, {latitude}), 4326)::geography,
+                        {radiusMeters})")
+            .Include(i => i.Category)
+            .Include(i => i.Owner)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(categorySlug))
+        {
+            itemsQuery = itemsQuery.Where(i => i.Category != null && i.Category.Slug == categorySlug);
+        }
+
+        var items = await itemsQuery.ToListAsync();
+        foreach (var item in items)
+        {
+            item.Latitude = item.Location?.Y;
+            item.Longitude = item.Location?.X;
+            item.DistanceKm = item.Latitude.HasValue && item.Longitude.HasValue
+                ? CalculateDistanceKm(latitude, longitude, item.Latitude.Value, item.Longitude.Value)
+                : null;
+        }
+
+        var ordered = items
+            .OrderBy(i => i.DistanceKm ?? double.MaxValue)
+            .ToList();
+
+        return new NearbySearchResult(ordered, latitude, longitude, radiusKm, ordered.Count);
+    }
+
+    /// <summary>
     /// This returns every locally seeded category ordered by display name for
     /// pickers and filters.
     /// </summary>
@@ -157,4 +209,31 @@ public class LocalItemRepository : IItemRepository
             .OrderBy(c => c.Name)
             .ToListAsync();
     }
+
+    private static void EnsureLocationPoint(Item item)
+    {
+        if (item.Location != null || item.Latitude == null || item.Longitude == null)
+        {
+            return;
+        }
+
+        item.Location = GeometryFactory.CreatePoint(new Coordinate(item.Longitude.Value, item.Latitude.Value));
+    }
+
+    private static double CalculateDistanceKm(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double earthRadiusKm = 6371.0088;
+        var dLat = ToRadians(lat2 - lat1);
+        var dLon = ToRadians(lon2 - lon1);
+        var startLat = ToRadians(lat1);
+        var endLat = ToRadians(lat2);
+
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(startLat) * Math.Cos(endLat) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+        return earthRadiusKm * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+    }
+
+    private static double ToRadians(double degrees) => degrees * Math.PI / 180;
 }

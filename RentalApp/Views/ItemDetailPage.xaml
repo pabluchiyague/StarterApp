@@ -2,6 +2,7 @@
 <ContentPage x:Class="RentalApp.Views.ItemDetailPage"
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:RentalApp.Database.Models;assembly=RentalApp.Database"
              Title="{Binding Title}">
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="12">
@@ -14,7 +15,11 @@
             <Label Text="{Binding Item.DailyRate, StringFormat='£{0:0.00}/day'}"
                    FontSize="18" />
             <Label Text="{Binding Item.Category.Name}" />
-            <Label Text="{Binding Item.Owner.FullName}" />
+            <Label Text="{Binding Item.Owner.FullName, StringFormat='Owner: {0}'}" />
+            <Label Text="{Binding Item.Owner.AverageRating, StringFormat='Owner average rating: {0:0.0}/5',
+                                  TargetNullValue='Owner average rating: No rating yet'}" />
+            <Label Text="{Binding Item.AverageRating, StringFormat='Item average rating: {0:0.0}/5',
+                                  TargetNullValue='Item average rating: No reviews yet'}" />
             <Label Text="{Binding Item.Description}" />
             <Label Text="{Binding Item.IsAvailable, StringFormat='Available: {0}'}" />
             <VerticalStackLayout Spacing="8"
@@ -33,6 +38,37 @@
             <Button Text="Toggle availability"
                     Command="{Binding ToggleAvailabilityCommand}"
                     IsVisible="{Binding IsOwner}" />
+            <Label Text="{Binding ReviewsTitle}"
+                   FontSize="20"
+                   FontAttributes="Bold"
+                   Margin="0,12,0,0" />
+            <Label Text="No reviews yet."
+                   IsVisible="{Binding HasReviews, Converter={StaticResource InvertedBoolConverter}}" />
+            <CollectionView ItemsSource="{Binding Reviews}"
+                            IsVisible="{Binding HasReviews}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Review">
+                        <Border StrokeThickness="1"
+                                Stroke="#DDDDDD"
+                                Padding="12"
+                                Margin="0,0,0,10">
+                            <VerticalStackLayout Spacing="6">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Text="{Binding Reviewer.FullName}"
+                                           FontAttributes="Bold" />
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Rating, StringFormat='{0}/5'}"
+                                           FontAttributes="Bold" />
+                                </Grid>
+                                <Label Text="{Binding Comment}" />
+                                <Label Text="{Binding CreatedAt, StringFormat='{0:dd MMM yyyy}'}"
+                                       FontSize="12"
+                                       TextColor="#666666" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
             <ActivityIndicator IsRunning="{Binding IsBusy}"
                                IsVisible="{Binding IsBusy}" />
         </VerticalStackLayout>
