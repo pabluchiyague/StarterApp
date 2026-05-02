@@ -17,12 +17,14 @@
                     Command="{Binding LoadCommand}" />
         </Grid>
 
-        <Grid Grid.Row="1">
-            <VerticalStackLayout Spacing="10">
+        <Grid Grid.Row="1"
+              RowDefinitions="Auto,*"
+              RowSpacing="10">
                 <Label Text="{Binding ErrorMessage}"
                        TextColor="Red"
                        IsVisible="{Binding HasError}" />
-                <CollectionView ItemsSource="{Binding Rentals}">
+                <CollectionView Grid.Row="1"
+                                ItemsSource="{Binding Rentals}">
                     <CollectionView.EmptyView>
                         <Label Text="{Binding EmptyMessage}"
                                HorizontalOptions="Center"
@@ -70,7 +72,6 @@
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
-            </VerticalStackLayout>
 
             <ActivityIndicator IsRunning="{Binding IsBusy}"
                                IsVisible="{Binding IsBusy}"

@@ -86,6 +86,9 @@ public static class MauiProgram
             builder.Services.AddHttpClient<IReviewRepository, ApiReviewRepository>(client =>
                 client.BaseAddress = apiBase)
                 .AddHttpMessageHandler<AuthorizationDelegatingHandler>();
+            builder.Services.AddHttpClient<IUserProfileRepository, ApiUserProfileRepository>(client =>
+                client.BaseAddress = apiBase)
+                .AddHttpMessageHandler<AuthorizationDelegatingHandler>();
         }
         else
         {
@@ -96,6 +99,7 @@ public static class MauiProgram
             builder.Services.AddScoped<IItemRepository, LocalItemRepository>();
             builder.Services.AddScoped<IRentalRepository, LocalRentalRepository>();
             builder.Services.AddScoped<IReviewRepository, LocalReviewRepository>();
+            builder.Services.AddScoped<IUserProfileRepository, LocalUserProfileRepository>();
         }
         builder.Services.AddScoped<RentalApp.Database.Services.RentalService>();
         builder.Services.AddScoped<RentalApp.Database.Services.ReviewService>();
@@ -115,6 +119,8 @@ public static class MauiProgram
         builder.Services.AddTransient<OutgoingRentalsPage>();
         builder.Services.AddTransient<LeaveReviewViewModel>();
         builder.Services.AddTransient<LeaveReviewPage>();
+        builder.Services.AddTransient<UserProfileViewModel>();
+        builder.Services.AddTransient<UserProfilePage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

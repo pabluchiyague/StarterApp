@@ -5,6 +5,7 @@ using RentalApp.Database.Models;
 using RentalApp.Database.Repositories;
 using RentalApp.Models.Api;
 using RentalApp.Services;
+using RentalApp.Views;
 
 namespace RentalApp.ViewModels;
 
@@ -15,6 +16,7 @@ public partial class ItemDetailViewModel : BaseViewModel
     private readonly IRentalRepository _rentalRepository;
     private readonly IReviewRepository _reviewRepository;
     private readonly IAuthenticationService _auth;
+    private readonly INavigationService _navigation;
 
     [ObservableProperty]
     private Item? item;
@@ -53,12 +55,14 @@ public partial class ItemDetailViewModel : BaseViewModel
         IItemRepository repository,
         IRentalRepository rentalRepository,
         IReviewRepository reviewRepository,
-        IAuthenticationService auth)
+        IAuthenticationService auth,
+        INavigationService navigation)
     {
         _repository = repository;
         _rentalRepository = rentalRepository;
         _reviewRepository = reviewRepository;
         _auth = auth;
+        _navigation = navigation;
         Title = "Item details";
     }
 
@@ -153,6 +157,21 @@ public partial class ItemDetailViewModel : BaseViewModel
     /// This toggles availability for the current item when the signed-in user
     /// is the owner.
     /// </summary>
+    [RelayCommand]
+    private async Task ViewOwnerProfileAsync()
+    {
+        if (Item?.OwnerId is not > 0)
+        {
+            SetError("Owner profile is not available for this item.");
+            return;
+        }
+
+        await _navigation.NavigateToAsync(nameof(UserProfilePage), new Dictionary<string, object>
+        {
+            ["UserId"] = Item.OwnerId
+        });
+    }
+
     [RelayCommand]
     private async Task ToggleAvailabilityAsync()
     {
