@@ -34,8 +34,11 @@ The solution is split into three main projects:
 
 ```text
 RentalApp              MAUI app, pages, view models, services, navigation
-RentalApp.Database     domain models, repositories, services, EF Core, migrations
-RentalApp.Tests        xUnit tests for repositories, services, API clients, states
+RentalApp.Database     domain models, EF Core, migrations, services, states
+RentalApp.Database/Data/Repositories
+                       API and local repository interfaces/implementations
+RentalApp.Tests        xUnit tests grouped by fixtures, database, repositories,
+                       services, and states
 ```
 
 Main patterns used:
