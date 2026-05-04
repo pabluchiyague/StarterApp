@@ -145,6 +145,54 @@ public class ApiItemRepositoryTests
     public class UpdateItemAsyncTests
     {
     [Fact]
+    public async Task UpdateItemAsync_AllEditableFields_PutsBodyToItemEndpoint()
+    {
+        var handler = new FakeHttpMessageHandler(_ => Ok(new ItemDetailDto
+        {
+            Id = 7,
+            Title = "Updated camera kit",
+            Description = "Updated description",
+            DailyRate = 11.25m,
+            CategoryId = 4,
+            Category = "electronics",
+            OwnerId = 2,
+            OwnerName = "Owner",
+            IsAvailable = false,
+            Latitude = 55.9533,
+            Longitude = -3.1883,
+            CreatedAt = DateTime.UtcNow
+        }));
+        var repository = CreateRepository(handler);
+
+        var result = await repository.UpdateItemAsync(7, new UpdateItemRequest
+        {
+            Title = "Updated camera kit",
+            Description = "Updated description",
+            DailyRate = 11.25m,
+            CategoryId = 4,
+            IsAvailable = false,
+            Latitude = 55.9533,
+            Longitude = -3.1883
+        });
+
+        var request = handler.Requests.Single();
+        Assert.Equal(HttpMethod.Put, request.Method);
+        Assert.Equal("https://test/items/7", request.RequestUri!.ToString());
+
+        var json = await request.Content!.ReadAsStringAsync();
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal("Updated camera kit", document.RootElement.GetProperty("title").GetString());
+        Assert.Equal("Updated description", document.RootElement.GetProperty("description").GetString());
+        Assert.Equal(11.25m, document.RootElement.GetProperty("dailyRate").GetDecimal());
+        Assert.Equal(4, document.RootElement.GetProperty("categoryId").GetInt32());
+        Assert.False(document.RootElement.GetProperty("isAvailable").GetBoolean());
+        Assert.Equal(55.9533, document.RootElement.GetProperty("latitude").GetDouble(), 4);
+        Assert.Equal(-3.1883, document.RootElement.GetProperty("longitude").GetDouble(), 4);
+        Assert.NotNull(result);
+        Assert.Equal("Updated camera kit", result!.Title);
+    }
+
+    [Fact]
     public async Task UpdateItemAsync_ForbiddenResponse_ThrowsUnauthorizedAccessException()
     {
         var repository = CreateRepository(new FakeHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.Forbidden)));

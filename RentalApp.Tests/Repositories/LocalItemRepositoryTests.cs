@@ -140,6 +140,37 @@ public abstract class LocalItemRepositoryTests
     }
 
     [Fact]
+    public async Task UpdateItemAsync_AllEditableFields_UpdatesCategoryAvailabilityAndLocation()
+    {
+        var owner = await CreateOwnerAsync("update-all");
+        var item = await CreateItemInCategoryAsync(owner.Id, "tools", $"Editable {Guid.NewGuid():N}");
+        var category = await _fixture.TestDbContext.Categories.SingleAsync(c => c.Slug == "electronics");
+
+        var result = await _repository.UpdateItemAsync(item.Id, new UpdateItemRequest
+        {
+            Title = "Updated camera kit",
+            Description = "Updated description",
+            DailyRate = 11.25m,
+            CategoryId = category.Id,
+            IsAvailable = false,
+            Latitude = 55.9533,
+            Longitude = -3.1883
+        });
+
+        Assert.NotNull(result);
+        Assert.Equal("Updated camera kit", result!.Title);
+        Assert.Equal("Updated description", result.Description);
+        Assert.Equal(11.25m, result.DailyRate);
+        Assert.Equal(category.Id, result.CategoryId);
+        Assert.False(result.IsAvailable);
+        Assert.Equal(55.9533, result.Latitude);
+        Assert.Equal(-3.1883, result.Longitude);
+        Assert.NotNull(result.Location);
+        Assert.Equal(55.9533, result.Location!.Y, 4);
+        Assert.Equal(-3.1883, result.Location.X, 4);
+    }
+
+    [Fact]
     public async Task UpdateItemAsync_MissingItem_ReturnsNull()
     {
         var result = await _repository.UpdateItemAsync(-1, new UpdateItemRequest

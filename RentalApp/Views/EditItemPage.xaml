@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RentalApp.Views.EditItemPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             Title="{Binding Title}">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label Text="{Binding ErrorMessage}"
+                   TextColor="Red"
+                   IsVisible="{Binding HasError}" />
+            <Entry Placeholder="Title"
+                   Text="{Binding TitleText}" />
+            <Editor Placeholder="Description"
+                    Text="{Binding Description}"
+                    AutoSize="TextChanges"
+                    HeightRequest="120" />
+            <Entry Placeholder="Daily rate"
+                   Text="{Binding DailyRateText}"
+                   Keyboard="Numeric" />
+            <Picker Title="Category"
+                    ItemsSource="{Binding Categories}"
+                    SelectedItem="{Binding SelectedCategory}"
+                    ItemDisplayBinding="{Binding Name}" />
+            <Grid ColumnDefinitions="*,Auto"
+                  ColumnSpacing="12">
+                <Label Text="Available"
+                       VerticalOptions="Center" />
+                <Switch Grid.Column="1"
+                        IsToggled="{Binding IsAvailable}" />
+            </Grid>
+            <Entry Placeholder="Latitude"
+                   Text="{Binding LatitudeText}"
+                   Keyboard="Numeric" />
+            <Entry Placeholder="Longitude"
+                   Text="{Binding LongitudeText}"
+                   Keyboard="Numeric" />
+            <Button Text="Save changes"
+                    Command="{Binding SaveCommand}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

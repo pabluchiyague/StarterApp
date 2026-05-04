@@ -19,6 +19,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,6 +28,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RentalApp.Database\RentalApp.Database.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\RentalApp\ViewModels\BaseViewModel.cs" Link="ViewModels\AppSource\BaseViewModel.cs" />
+    <Compile Include="..\RentalApp\ViewModels\CreateItemViewModel.cs" Link="ViewModels\AppSource\CreateItemViewModel.cs" />
+    <Compile Include="..\RentalApp\ViewModels\EditItemViewModel.cs" Link="ViewModels\AppSource\EditItemViewModel.cs" />
+    <Compile Include="..\RentalApp\ViewModels\ItemsListViewModel.cs" Link="ViewModels\AppSource\ItemsListViewModel.cs" />
+    <Compile Include="..\RentalApp\ViewModels\NearbyItemsViewModel.cs" Link="ViewModels\AppSource\NearbyItemsViewModel.cs" />
+    <Compile Include="..\RentalApp\ViewModels\UserProfileViewModel.cs" Link="ViewModels\AppSource\UserProfileViewModel.cs" />
+    <Compile Include="..\RentalApp\Services\ILocationService.cs" Link="ViewModels\AppSource\ILocationService.cs" />
+    <Compile Include="..\RentalApp\Services\INavigationService.cs" Link="ViewModels\AppSource\INavigationService.cs" />
   </ItemGroup>
 
 </Project>
