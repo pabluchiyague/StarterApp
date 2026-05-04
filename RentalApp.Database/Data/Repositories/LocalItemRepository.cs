@@ -125,9 +125,29 @@ public class LocalItemRepository : IItemRepository
             existing.DailyRate = dailyRate;
         }
 
+        if (updates.CategoryId is { } categoryId)
+        {
+            existing.CategoryId = categoryId;
+        }
+
         if (updates.IsAvailable is { } isAvailable)
         {
             existing.IsAvailable = isAvailable;
+        }
+
+        if (updates.Latitude is { } latitude)
+        {
+            existing.Latitude = latitude;
+        }
+
+        if (updates.Longitude is { } longitude)
+        {
+            existing.Longitude = longitude;
+        }
+
+        if (updates.Latitude.HasValue || updates.Longitude.HasValue)
+        {
+            EnsureLocationPoint(existing);
         }
 
         existing.UpdatedAt = DateTime.UtcNow;
@@ -212,7 +232,7 @@ public class LocalItemRepository : IItemRepository
 
     private static void EnsureLocationPoint(Item item)
     {
-        if (item.Location != null || item.Latitude == null || item.Longitude == null)
+        if (item.Latitude == null || item.Longitude == null)
         {
             return;
         }

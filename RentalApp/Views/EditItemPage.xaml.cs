@@ -2,15 +2,11 @@ using RentalApp.ViewModels;
 
 namespace RentalApp.Views;
 
-public partial class ItemDetailPage : ContentPage
+public partial class EditItemPage : ContentPage
 {
-    private readonly ItemDetailViewModel _viewModel;
+    private readonly EditItemViewModel _viewModel;
 
-    /// <summary>
-    /// This creates the item detail page and connects it to the injected
-    /// detail view-model.
-    /// </summary>
-    public ItemDetailPage(ItemDetailViewModel viewModel)
+    public EditItemPage(EditItemViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = viewModel;

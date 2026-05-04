@@ -154,8 +154,7 @@ public partial class ItemDetailViewModel : BaseViewModel
     }
 
     /// <summary>
-    /// This toggles availability for the current item when the signed-in user
-    /// is the owner.
+    /// This opens the public profile for the owner of the current item.
     /// </summary>
     [RelayCommand]
     private async Task ViewOwnerProfileAsync()
@@ -172,6 +171,24 @@ public partial class ItemDetailViewModel : BaseViewModel
         });
     }
 
+    [RelayCommand]
+    private async Task EditItemAsync()
+    {
+        if (Item == null || !IsOwner)
+        {
+            return;
+        }
+
+        await _navigation.NavigateToAsync(nameof(EditItemPage), new Dictionary<string, object>
+        {
+            ["ItemId"] = Item.Id
+        });
+    }
+
+    /// <summary>
+    /// This toggles availability for the current item when the signed-in user
+    /// is the owner.
+    /// </summary>
     [RelayCommand]
     private async Task ToggleAvailabilityAsync()
     {

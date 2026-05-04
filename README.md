@@ -17,7 +17,7 @@ offline development.
 ## Features
 
 - API registration and login with JWT storage in MAUI SecureStorage.
-- Browse, search, filter, view, create, and update rental item listings.
+- Browse, search, filter, view, create, and owner-edit rental item listings.
 - Owner name and owner average rating shown on items.
 - Public user profile page using `GET /users/{id}/profile`.
 - Reviews shown for items and users.
@@ -115,9 +115,22 @@ Run the test suite:
 dotnet test RentalApp.Tests/RentalApp.Tests.csproj
 ```
 
-The tests use xUnit. Integration-style local repository tests use
-`DatabaseFixture`; API repository tests use mocked HTTP handlers rather than
-calling the live API.
+The tests use xUnit with Arrange-Act-Assert naming and structure. Integration
+style local repository tests use `DatabaseFixture`; API repository tests use
+mocked HTTP handlers rather than calling the live API.
+
+Current feature coverage includes:
+
+- authentication registration/login validation
+- item browse/search/filter/detail/create/update/nearby repository behaviour
+- owner-only item update payloads, category changes, availability changes, and
+  PostGIS location updates
+- incoming and outgoing rental workflow service behaviour
+- rental state transitions
+- review creation, duplicate-review handling, and item review loading
+- public user profile loading, average rating, listed item count, completed
+  rental count, and received reviews
+- schema sanity checks for the migrated local database
 
 ## Test Coverage
 
@@ -125,6 +138,14 @@ Generate Cobertura coverage:
 
 ```powershell
 dotnet test RentalApp.Tests/RentalApp.Tests.csproj --collect:"XPlat Code Coverage"
+```
+
+Latest local coverage check:
+
+```text
+75 tests passed
+Line coverage: 84.21%
+Branch coverage: 51.71%
 ```
 
 Show the latest line coverage percentage in PowerShell:

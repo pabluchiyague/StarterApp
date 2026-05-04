@@ -37,6 +37,9 @@
             <Label Text="{Binding SuccessMessage}"
                    TextColor="Green"
                    IsVisible="{Binding HasSuccess}" />
+            <Button Text="Edit item"
+                    Command="{Binding EditItemCommand}"
+                    IsVisible="{Binding IsOwner}" />
             <Button Text="Toggle availability"
                     Command="{Binding ToggleAvailabilityCommand}"
                     IsVisible="{Binding IsOwner}" />
